@@ -179,7 +179,7 @@ with T set. There is **no extra cycle for a page-crossing index or branch**
 
 Almost every zero-page, absolute and indirect access costs **one more cycle
 than on a 65C02**: `LDA zp` is 4 (65C02: 3), `LDA abs` 5 (4), `LDA (zp)` 7 (5),
-`JSR` 7 (6), `RTS` 7 (6), `RTI` 7 (6), `BRK` 8 (7), `JMP (abs,X)` 7 (6) (SW;
+`JSR` 7 (6), `RTS` 7 (6), `RTI` 7 (6), `BRK` 8 (7), `JMP (abs)` and `JMP (abs,X)` 7 (6) (SW and HW map;
 measured against the Rockwell 65C02 corpus in timing.md). The SingleStepTests
 `huc6280` corpus (Mesen) shows where the extra cycle sits: a bus cycle with no
 read or write, after the operand fetch.
