@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "huc6280-python"
+version = "0.0.0.dev0"
+description = "Readable, pure-Python Hudson HuC6280 core, cycle by cycle, for the PC Engine, TurboGrafx-16 and SuperGrafx"
+readme = "README.md"
+# The floor is the newest Python PyPy supports (3.11 as of PyPy 7.3.23); raise it when PyPy does.
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "alewman" }]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: System :: Emulators",
+]
+# Phase 0: no code yet. The build session adds the 6502-python dependency,
+# pinned by commit, once the PRs in docs/handoff-brief.md ("What 6502-python
+# must gain") have landed; until then there is nothing to import.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff==0.16.8"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/huc6280"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers -ra"
+testpaths = ["tests"]
+markers = [
+    "slow: a whole external-oracle corpus run; `pytest -m \"not slow\"` is the quick loop",
+]

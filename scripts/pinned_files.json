@@ -1,0 +1,92 @@
+[
+ {
+  "path": "reference/docs/huc6280-hardware-manual.pdf",
+  "url": "https://raw.githubusercontent.com/MiSTer-devel/TurboGrafx16_MiSTer/827d45f45799b8ab3a536510847f2108a92e81bd/docs/HuC6280%20-%20CMOS%208-bit%20Microprocessor%20Hardware%20Manual.pdf",
+  "sha256": "40a32e5dec7fefd8ea1893be91a53e6f6d4eae5f9c86154019ae792b40374fcb",
+  "size": 1196754,
+  "kind": "document",
+  "license": "Hudson Soft, all rights reserved (long circulated; mirrored in the MiSTer repository)",
+  "note": "Hudson Soft HuC6280 CMOS 8-bit Microprocessor Hardware Manual. Manufacturer. Block diagram, MMU (MPR/TAM/TMA), interrupts, timer, I/O port, clock switching, pin timing. Fetched 2026-10-23 from the MiSTer TurboGrafx16 repository at the pinned commit."
+ },
+ {
+  "path": "reference/docs/huc6280-software-manual.pdf",
+  "url": "https://raw.githubusercontent.com/MiSTer-devel/TurboGrafx16_MiSTer/827d45f45799b8ab3a536510847f2108a92e81bd/docs/HuC6280%20-%20CMOS%208-bit%20Microprocessor%20Software%20Manual.pdf",
+  "sha256": "51eeda397e413527fe33f5446d83bd6ff7a49da2a0fd56cf3840c65c0920fd0c",
+  "size": 2416355,
+  "kind": "document",
+  "license": "Hudson Soft, all rights reserved (long circulated; mirrored in the MiSTer repository)",
+  "note": "Hudson Soft HuC6280 Software Manual: instruction set, addressing modes, per-instruction cycles and bytes, flags, the T flag. Manufacturer."
+ },
+ {
+  "path": "reference/docs/huc6280-psg-manual.pdf",
+  "url": "https://raw.githubusercontent.com/MiSTer-devel/TurboGrafx16_MiSTer/827d45f45799b8ab3a536510847f2108a92e81bd/docs/HuC6280%20-%20CMOS%20Programmable%20Sound%20Generator%20Manual.pdf",
+  "sha256": "2f463fd388cd64bc1bef79d259cf456c2c6d4bd8aaba25918b71f2443af6c04b",
+  "size": 934252,
+  "kind": "document",
+  "license": "Hudson Soft, all rights reserved",
+  "note": "Hudson Soft HuC6280 PSG manual: the sound generator inside the CPU die ($0800-$0809 on the I/O page). Board-side; pinned so the die boundary can be argued."
+ },
+ {
+  "path": "reference/docs/pcetech.txt",
+  "url": "https://raw.githubusercontent.com/MiSTer-devel/TurboGrafx16_MiSTer/827d45f45799b8ab3a536510847f2108a92e81bd/docs/pcetech.txt",
+  "sha256": "d261a9a329d12e877690187a09dcff0108590fabd34f49ca8ee8d38732390c34",
+  "size": 74935,
+  "kind": "document",
+  "license": "Charles MacDonald, freely circulated",
+  "note": "Charles MacDonald's PC Engine hardware document (pcetech). Research tier; its author states what he tested on a real TurboGrafx-16. CPU, timer, MPR, I/O page, interrupts, VDC wait states."
+ },
+ {
+  "path": "reference/docs/sgxtech.txt",
+  "url": "https://raw.githubusercontent.com/MiSTer-devel/TurboGrafx16_MiSTer/827d45f45799b8ab3a536510847f2108a92e81bd/docs/sgxtech.txt",
+  "sha256": "1c56a719cc5c8ef32c34c7547ffef16d45e52788f5ca63ab46b5042026111155",
+  "size": 19765,
+  "kind": "document",
+  "license": "Charles MacDonald, freely circulated",
+  "note": "Charles MacDonald's SuperGrafx notes. Research."
+ },
+ {
+  "path": "reference/docs/memmap.txt",
+  "url": "https://raw.githubusercontent.com/MiSTer-devel/TurboGrafx16_MiSTer/827d45f45799b8ab3a536510847f2108a92e81bd/docs/memmap.txt",
+  "sha256": "89a62a82498bba199ad984b0741e31162833e938039629eaaac01eef0ad29e9b",
+  "size": 4196,
+  "kind": "document",
+  "license": "as the MiSTer repository",
+  "note": "The MiSTer authors' memory-map note for the PC Engine. Research."
+ },
+ {
+  "path": "reference/docs/pce_cpu-shu.html",
+  "url": "http://shu.emuunlim.com/download/pcedocs/pce_cpu.html",
+  "sha256": "5416f4a53aa87539828dc7f1b15dd5a399ad8fa2eeabe1b669c6072939f6ca45",
+  "size": 86300,
+  "kind": "document",
+  "license": "freely readable",
+  "note": "Shu's 'PC-Engine Documentation: The HuC6280 CPU' (opcode map, cycles, notes). Research."
+ },
+ {
+  "path": "reference/roms/covell-cpu-test/CPU_Test.zip",
+  "url": "http://www.chrismcovell.com/data/CPU_Test.zip",
+  "sha256": "db65a32d8832663f606afbcedcba3c62e84a28e53001a38bfb4e9bd6c937b625",
+  "size": 1233343,
+  "kind": "test-rom",
+  "license": "Chris Covell; no licence stated",
+  "note": "Chris Covell's PC-Engine CPU Test (2019): one instruction looped per scanline, raster drift shows a cycle error; includes photographs of real hardware (flash card and SSDS3) next to Mednafen and MiSTer, and its assembler source. Hardware-captured as photographs, judged by eye, and it needs a VDC/VCE: a board judge."
+ },
+ {
+  "path": "reference/docs/covell-cputest-page.html",
+  "url": "https://www.chrismcovell.com/CPUTest/",
+  "sha256": "65ccaf65a6cb697aa1581bd1b3d18af159e64bb8b3a32615a282bf10ff56f3a0",
+  "size": 14543,
+  "kind": "document",
+  "license": "Chris Covell",
+  "note": "The explanation page of the CPU Test."
+ },
+ {
+  "path": "reference/build/oss-cad-suite-linux-x64-20261005.tgz",
+  "url": "https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2026-10-05/oss-cad-suite-linux-x64-20261005.tgz",
+  "sha256": "0c432bb689ba2aaea76d4c38fa6e7b3a81b1123e00d437bfae8c96b292bc6824",
+  "size": 746561069,
+  "kind": "tool",
+  "license": "ISC and per-tool",
+  "note": "GHDL 7.0.0-dev, no sudo; the same bundle 65816-python and sm83-python pin (not copied: fetched again from the URL). Only for rung 5, a GHDL run of srg320's HUC6280 VHDL; Phase 0 does not fetch it (--no-tools)."
+ }
+]
