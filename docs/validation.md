@@ -127,8 +127,8 @@ detects, the highest tier that covers a claim decides it.
   closest to the HuC6280. Ten files were fetched to the scratchpad on
   2026-10-23 to measure timing.md's comparison table.
 - It cannot judge cycles or bus shapes (the HuC6280 spends an extra cycle on
-  almost every memory access), nor any opcode whose meaning differs (21 listed
-  in timing.md plus the multi-byte `NOP`s). It can judge **results**: A X Y S
+  almost every memory access), nor any opcode whose meaning differs (24 Hudson-only
+  opcodes, timing.md, plus the multi-byte `NOP`s). It can judge **results**: A X Y S
   P PC and the bytes written, for the opcodes the chips share, if the memory
   is mapped as rung 1b says.
 
