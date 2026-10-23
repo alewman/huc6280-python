@@ -134,5 +134,20 @@
   ],
   "license": "HuC licence (see repo)",
   "note": "The HuC/PCEAS assembler: its instruction tables are a community encoding reference for the opcode map, bytes and addressing modes. Research."
+ },
+ {
+  "path": "reference/src/dormann",
+  "url": "https://github.com/Klaus2m5/6502_65C02_functional_tests",
+  "rev": "7954e2dbb49c469ea286070bf46cdd71aeb29e4b",
+  "date": "2020-01-05T13:10:38Z",
+  "sparse": [
+   "/65C02_extended_opcodes_test.a65c",
+   "/bin_files/65C02_extended_opcodes_test.bin",
+   "/as65_142.zip",
+   "/readme.txt",
+   "/license.txt"
+  ],
+  "license": "GPL-3.0 (license.txt)",
+  "note": "Klaus Dormann's 65C02 extended opcodes test: the source and prebuilt image (code from $0400, zero page and data in the first 8 KB, traps on the first wrong result) and his as65 assembler. Self-checking; written for a 65C02 whose zero page is page zero, so it cannot run unmodified on a HuC6280 (docs/validation.md, rung 2). Research tier for the HuC6280."
  }
 ]
