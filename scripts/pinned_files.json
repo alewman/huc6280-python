@@ -88,5 +88,14 @@
   "kind": "tool",
   "license": "ISC and per-tool",
   "note": "GHDL 7.0.0-dev, no sudo; the same bundle 65816-python and sm83-python pin (not copied: fetched again from the URL). Only for rung 5, a GHDL run of srg320's HUC6280 VHDL; Phase 0 does not fetch it (--no-tools)."
+ },
+ {
+  "path": "reference/build/mednafen-1.32.1.tar.xz",
+  "url": "https://mednafen.github.io/releases/files/mednafen-1.32.1.tar.xz",
+  "sha256": "de7eb94ab66212ae7758376524368a8ab208234b33796625ca630547dbc83832",
+  "size": 3571236,
+  "kind": "tool",
+  "license": "GPL-2.0+",
+  "note": "Mednafen 1.32.1 source: the accurate PCE core (mednafen/pce/huc6280.cpp) as its authors run it, the second emulator referee if one wants a build with an instruction trace patched in. Not built in Phase 0 (it has no headless trace; docs/validation.md). Pinned as a tool so --no-tools leaves it out; 3.5 MB."
  }
 ]
