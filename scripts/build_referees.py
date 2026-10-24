@@ -13,11 +13,13 @@ step is skipped when its output already exists.
   in dependency order. ``HUC6280_CPU`` has the MMU inside (``A_OUT`` is 21
   bits), the T flag, block transfers, and three interrupt inputs; ``psg.vhd``
   and the top-level wrapper ``HUC6280.vhd`` are not analysed (the PSG is the
-  board's). Hand-written HDL, not die-traced: emulator tier. Rung 5 builds a
-  testbench on it (docs/validation.md); this step only proves it analyses.
+  board's). Hand-written HDL, not die-traced: emulator tier. This step only proves it analyses.
+- ``huc6280-tb``: analyse the same units with tests/huc6280_vhdl/tb_huc6280.vhd (GHDL's LLVM
+  back end, -O2) and elaborate the rung 5 testbench executable into reference/build/huc6280-tb.
 
     python -I scripts/build_referees.py                  # all steps
     python -I scripts/build_referees.py huc6280-vhdl --oss /path/to/oss-cad-suite
+    python -I scripts/build_referees.py huc6280-tb --oss /path/to/oss-cad-suite   # the rung 5 testbench
 """
 
 from __future__ import annotations
@@ -66,7 +68,29 @@ def step_vhdl(given: Path | None) -> None:
     print(f"analysed {len(UNITS)} units into {work}")
 
 
-STEPS = {"oss": step_oss, "huc6280-vhdl": step_vhdl}
+def step_vhdl_tb(given: Path | None) -> None:
+    work = BUILD / "huc6280-tb"
+    bench = ROOT / "tests" / "huc6280_vhdl" / "tb_huc6280.vhd"
+    executable = work / "tb_huc6280"
+    if executable.exists() and executable.stat().st_mtime > bench.stat().st_mtime:
+        return
+    step_oss(given)
+    work.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ)
+    env["PATH"] = f"{oss_dir(given) / 'bin'}:{env['PATH']}"
+    sources = [RTL / f"{unit}.vhd" for unit in UNITS] + [bench]
+    for source in sources:
+        subprocess.run(
+            ["ghdl", "-a", "--std=08", "-fsynopsys", "-O2", str(source)],
+            cwd=work, env=env, check=True,
+        )  # fmt: skip
+    subprocess.run(
+        ["ghdl", "-e", "--std=08", "-fsynopsys", "tb_huc6280"], cwd=work, env=env, check=True
+    )
+    print(f"built {executable}")
+
+
+STEPS = {"oss": step_oss, "huc6280-vhdl": step_vhdl, "huc6280-tb": step_vhdl_tb}
 
 
 def main() -> int:

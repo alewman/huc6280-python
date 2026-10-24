@@ -223,3 +223,28 @@ them. This is the board's clock if the timer is the board's (decision).
 - Whether `(zp),Y` or `(zp,X)` pointer reads wrap inside page zero of the
   logical zero page (`$20FF` then `$2000`): Mesen wraps (`ReadZeroPageWrap`),
   MAME wraps (`program_read16z`), the manual says nothing (U8).
+
+## The HDL's bus, compared (rung 5, 2026-10-24)
+
+srg320's `HUC6280_CPU` (emulator tier, hand-written, proven on FPGA; analysed by GHDL) was run
+on 627,484 SingleStepTests initial states; `MCYCLE` high means a cycle with a memory access, low
+a cycle without. Against Mesen's model (the corpus, the core):
+
+- **Cycle counts agree** for every opcode but `SBC abs` with D = 1 (the HDL takes 7 where SW
+  and the corpus say 6; the other seven `SBC` modes agree). Block transfers agree to 500 cycles.
+- **Writes and data reads agree** (address and value, in order) for every opcode but `BRK` with
+  T set (C16) and `BBR`/`BBS` (the HDL reads the zero-page byte, then the offset).
+- **Dummy reads.** The HDL does read `PC + 1` in implied instructions with an address-bus
+  access (`CLC`, `SXY`, `TAX`, `INC A`...: `MCYCLE` high), as Mesen does; it makes **no** access in
+  the undefined `NOP`s, `PLA`/`PLP`/`PLX`/`PLY`, `RTS`, `RTI`, and in the extra cycle of decimal
+  `ADC`/`SBC` (`MCYCLE` low where Mesen reads the next opcode). The dummy read of a taken
+  branch is a read at the HDL's next-instruction address as in Mesen.
+- **Positions of the internal cycles** (C8): `BRK` `RR.WWWRR` (HDL) against `RRWWWRR.` (Mesen),
+  `JSR` `RRR.WW.` against `RR.WWR.`, `RTS` `R...RR.` against `R..RR..` (R includes a dummy
+  read, `.` an internal cycle), `BSR`, `RTI`, `JMP (abs)`/`(abs,X)`, `TST`, `BBR`/`BBS`; and in
+  every T-mode instruction the internal cycle comes **before** the zero-page read (`.RW`), where
+  Mesen has `R.W`. Instructions with plain operand fetches (loads, stores, ALU, shifts,
+  read-modify-writes, `(zp)`, `(zp,X)` and most `(zp),Y`) have the same places in both.
+- `MEM_INST`, the HDL's list of the instructions T applies to, is `ORA AND EOR ADC` in every
+  mode: **no `SBC`** (C5, a third vote).
+
