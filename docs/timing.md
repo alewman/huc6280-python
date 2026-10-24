@@ -87,7 +87,7 @@ branches are 2 not taken and 4 taken.) Variants the corpus shows:
 | --- | --- | --- |
 | branch taken (`BPL` etc., `BRA`) | +2 (always, whatever the page crossed) | SW; pcetech; corpus |
 | `BBR`/`BBS` taken | 6 -> 8 | SW; corpus |
-| D = 1 on `ADC`/`SBC` | +1 | HW HB-4; SW; corpus |
+| D = 1 on `ADC`/`SBC` | +1, a dummy read at the next instruction's address (U23) | HW HB-4; SW; corpus |
 | T = 1 on `ORA`/`AND`/`EOR`/`ADC` | +3 (and +1 more with D on `ADC`) | SW; corpus: `ADC #` is 2, 3 (D), 5 (T), 6 (T and D) in 638, 635, 621, 606 cases |
 | `ST0`/`ST1`/`ST2` | 4; the VDC stretch makes it 5 on a console | SW; pcetech; C1 |
 | VDC or VCE access by any instruction | +1 per access | pcetech; MAME, Mednafen, Mesen2 |
@@ -112,7 +112,7 @@ shape).
 | (zp), (zp,X), (zp),Y | `RRiRRiR` | `RRiRRiW` | |
 | `RMBi`/`SMBi` zp | | | `RRiRiiW` |
 | `BBRi`/`BBSi` | `RRiRiR` (not taken) | | |
-| branch | `RR` (not taken), `RRdi` (taken) | | |
+| branch | `RR` (not taken), `RRdi` (taken); `BRA` `RRii` (U24) | | |
 | `JMP abs` / `(abs)` / `(abs,X)` | `RRRi` / `RRRiRRi` / `RRRiRRi` | | |
 | `JSR` | `RRiWWRi` | | |
 | `BSR` | `RRiWWiii` | | |
