@@ -32,9 +32,15 @@ Write `trace.lua` in a fresh working directory:
 ```lua
 local dbg = manager.machine.debugger
 dbg.visible_cpu = manager.machine.devices[":maincpu"]
-dbg:command('trace cpu.trace,,noloop,{logerror "%X %X %X %X %X %X %X %X %d\n",pc,a,x,y,s,p,mpr0|(mpr1<<8)|(mpr2<<16)|(mpr3<<24),mpr4|(mpr5<<8)|(mpr6<<16)|(mpr7<<24),totalcycles}')
+dbg:command('trace cpu.trace,,noloop,{logerror "%X %X %X %X %X %X %d\\n",pc,a,x,y,s,p,totalcycles; logerror "M %X %X %X %X %X %X %X %X\\n",mpr0,mpr1,mpr2,mpr3,mpr4,mpr5,mpr6,mpr7}')
 dbg:command("go")
 ```
+
+(The first version of this recipe packed the eight MPRs into two words with
+`mpr0|(mpr1<<8)|(mpr2<<16)|(mpr3<<24)`. **That is wrong beyond MPR1**: the expression gave
+`0x4C0F8FF` for MPR0 = $FF, MPR1 = $F8, MPR2 = $13, so the debugger's `<<` or its symbols do
+not behave as C; found in rung 4 (2026-10-24) when the replay saw MPR2 = $C0 for a `TAM`
+of $13. Two `logerror` calls in one action work and are exact.)
 
 and run, from that directory, with the cartridge copied in as `cart.pce`:
 
@@ -120,7 +126,7 @@ watchpoint recipe that does not work (below), 3,982,940 instructions in
 | timer | `m_timer_load = ((data & 127) + 1) * 1024 * m_timer_scale`; reload only on a 0 to 1 control write; interrupt when the counter reaches 0 at an instruction boundary | U16 |
 | timer register read | `(m_timer_value >> 10) & 0x7F` with bit 7 from the I/O buffer | HW HB-21's "read twice" caution is not modelled |
 
-(Read from the source, not measured; confirm when building rung 4.)
+(Read from the source, not measured; rung 4 confirmed the interrupt entry, the poll and `CSL`/`CSH` rows below.)
 
 ## How MAME scores
 
@@ -129,17 +135,43 @@ Nothing here has been scored: there is no CPU-only test ROM with a verdict
 **base cycle table disagrees with MAME's in 26 opcodes** for the reasons in
 timing.md (VDC stretch folded in, `BBRi` charged 4 plus a helper, `$63`).
 
-## Use: rung 4, the replay (not yet run)
+## Rung 4: the replay (run 2026-10-24)
 
-`scripts/mame_trace.py GAME --io` records the trace and the hardware-page
-reads. A harness (docs/validation.md, "The minimal harness") runs the core
-from the same reset, answers the core's reads at `$1FE000`-`$1FFFFF` from the
-log in order, takes a MAME line's registers as the expectation after each
-instruction, and compares the `totalcycles` deltas against the core's cycle
-count at the right speed (a delta of 4 per cycle in low speed, 1 in high). The
-known, expected differences are the C-items above; anything else is a lead,
-to be looked up in [undocumented-behavior.md](undocumented-behavior.md) and
-settled by a higher tier. Interrupts: MAME's trace has no line for an entry;
-the line after the interrupted instruction is the handler's first, which the
-replay recognises by the vector target (`$FFF6`..`$FFFC` reads) and S, as
-65816-python's replay does.
+`scripts/mame_trace.py GAME --io --seconds 2 [--driver tg16]` records the trace, the
+hardware-page reads and the backup-RAM reads (`$1EE000-$1EFFFF`: MAME's `pce` driver always
+carries a CD-ROM unit's BRAM, and Final Soldier reads its "HUBM" header). `tests/mame_replay.py`
+runs the core in the minimal harness from the same reset, answers those reads from the log in
+order, and after every instruction compares PC, A, X, Y, S, P (without B) and MPR0-7 with MAME's
+next line and the cycle count with MAME's `totalcycles` delta (`scripts/mame_replay.py DIR`).
+
+| Game (driver) | Instructions | Register divergences | Cycles equal |
+| --- | --- | --- | --- |
+| Blazing Lazers (tg16) | 3,843,616 | 0 | 3,838,160 of 3,838,161 |
+| Bomberman '94 (pce) | 3,335,648 | 0 | 3,335,082 of 3,335,083 |
+| Bonk's Adventure (tg16) | 3,495,812 | 0 | 3,490,540 of 3,490,541 |
+| Final Soldier (pce) | 3,400,730 | 0 | 3,386,775 of 3,386,778 |
+| Gradius (pce) | 3,458,889 | 0 | 3,454,098 of 3,454,099 |
+| R-Type I (pce) | 3,479,285 | 0 | 3,479,170 of 3,479,171 |
+
+21.0 million instructions, 0 register or mapper divergences, with these differences, all
+explained and counted (the report prints them):
+
+- **Interrupt entry (C3).** 35,000-odd entries (IRQ1 and the timer); the replay steps the entry
+  when MAME's next line is at a vector's target with three more bytes on the stack. MAME charges
+  7 cycles, the core 8: every entry differs by exactly that one cycle.
+- **`CSH`/`CSL` (C7).** 3 of 21 million instructions: MAME bills the old speed for all three
+  cycles, the core switches before the last (+3 units at 7.16 MHz when going to high speed, -3
+  coming back).
+- **Interrupts taken a step earlier than the core's poll (U21).** After `CLI` MAME takes a
+  pending interrupt at once (about 1,100 times: the timer after `CLI` in Blazing Lazers 527
+  times); Mesen, Mednafen and the core let one more instruction run. The replay forces the entry
+  and counts it. Which is right is *undecidable here* (HW HB-12 says "sampled in the last bus
+  cycle"; whether `CLI`'s I counts there is what is unknown).
+- **Block transfers (C14).** MAME's transfers neither push nor pop A, X, Y; the core's (like
+  Mesen's and Mednafen's, HW HB-6) do, so `tii $2000,$2001,$1FFF` (the RAM clear every game
+  starts with) leaves A = 0 where MAME leaves it. The replay adopts MAME's A, X, Y after a
+  block transfer (130 times).
+- **Nothing else.** No unlogged hardware-page read, no logged read left unread, no cycle
+  difference in any other opcode: the VDC/VCE stretch, the taken-branch cost, `BBR`/`BBS`,
+  decimal `ADC` and the T-flag forms all agree with MAME's tables. (The CD-ROM and the timer
+  were MAME's, not the core's: the replay answers from the log.)

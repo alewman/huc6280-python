@@ -31,9 +31,9 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import struct
 import subprocess
 import sys
-import struct
 import time
 import zlib
 from pathlib import Path
@@ -45,8 +45,8 @@ FPS = 59.8261  # the screen's refresh as MAME 0.285 reports it for the pce drive
 TRACE_LUA = """\
 local dbg = manager.machine.debugger
 dbg.visible_cpu = manager.machine.devices[":maincpu"]
-dbg:command('trace cpu.trace,,noloop,{logerror "%X %X %X %X %X %X %X %X %d\\\\n",\
-pc,a,x,y,s,p,mpr0|(mpr1<<8)|(mpr2<<16)|(mpr3<<24),mpr4|(mpr5<<8)|(mpr6<<16)|(mpr7<<24),totalcycles}')
+dbg:command('trace cpu.trace,,noloop,{logerror "%X %X %X %X %X %X %d\\\\n",\
+pc,a,x,y,s,p,totalcycles; logerror "M %X %X %X %X %X %X %X %X\\\\n",mpr0,mpr1,mpr2,mpr3,mpr4,mpr5,mpr6,mpr7}')
 dbg:command("go")
 """
 
@@ -61,6 +61,13 @@ dbg:command("go")
 IO_LUA = """\
 io_tap = manager.machine.devices[":maincpu"].spaces["program"]:install_read_tap(
   0x1FE000, 0x1FFFFF, "io",
+  function(offset, data, mask)
+    manager.machine:logerror(string.format("R %X %X\\n", offset, data))
+  end)
+-- MAME's pce driver always has a CD-ROM unit's backup RAM at $1EE000 (HuCards that look for
+-- the "HUBM" header read it), so those reads are logged too.
+bram_tap = manager.machine.devices[":maincpu"].spaces["program"]:install_read_tap(
+  0x1EE000, 0x1EFFFF, "bram",
   function(offset, data, mask)
     manager.machine:logerror(string.format("R %X %X\\n", offset, data))
   end)
@@ -187,7 +194,7 @@ def main() -> int:
                 fields = line.split()
                 if line.startswith(b"[luaengine] R ") and len(fields) == 4:
                     reads += 1
-                elif len(fields) == 9 and fields[0][:1].isalnum() and not line.startswith(b"["):
+                elif len(fields) == 7 and fields[0][:1].isalnum() and not line.startswith(b"["):
                     instructions += 1
         print(f"  {instructions:,} instructions, {reads:,} hardware-page reads")
     snapshot = png(out)
