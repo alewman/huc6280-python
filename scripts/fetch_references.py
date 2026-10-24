@@ -102,6 +102,20 @@ def fetch_files(verify_only: bool, tools: bool) -> int:
     return problems
 
 
+def widen_sparse(path: Path, entry: dict) -> int:
+    """Bring an existing sparse checkout's patterns up to the pin file's (a pin may grow)."""
+    git = ["git", "-C", str(path)]
+    current = subprocess.run(
+        [*git, "sparse-checkout", "list"], capture_output=True, text=True, check=False
+    ).stdout.split()
+    if set(current) == set(entry["sparse"]):
+        return 0
+    subprocess.run([*git, "sparse-checkout", "set", "--no-cone", *entry["sparse"]], check=True)
+    subprocess.run([*git, "checkout", "-q", entry["rev"]], check=True)
+    print(f"widened {entry['path']} to {len(entry['sparse'])} sparse pattern(s)")
+    return 0
+
+
 def fetch_repos(verify_only: bool, skip: set[str]) -> int:
     problems = 0
     for entry in json.loads(REPOS.read_text(encoding="utf-8")):
@@ -118,6 +132,8 @@ def fetch_repos(verify_only: bool, skip: set[str]) -> int:
             if head != entry["rev"]:
                 print(f"ERROR: {entry['path']} is at {head}, pinned {entry['rev']}")
                 problems += 1
+            elif entry["sparse"] and not verify_only:
+                problems += widen_sparse(path, entry)
             continue
         if verify_only:
             print(f"missing: {entry['path']}")

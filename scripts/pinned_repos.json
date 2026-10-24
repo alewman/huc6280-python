@@ -17,11 +17,11 @@
    "/README.md",
    "/LICENSE",
    "/wdc65c02/README.md",
-   "/rockwell65c02/README.md",
+   "/rockwell65c02/",
    "/synertek65c02/README.md"
   ],
   "license": "MIT",
-  "note": "The CMOS sets (wdc65c02, rockwell65c02, synertek65c02: 256 files x 10,000 cases, per-cycle [address, value, read/write]) are pinned by revision but only their READMEs are checked out in Phase 0; widen the sparse list to /wdc65c02/ or /rockwell65c02/ for rung 1b. Emulator-derived."
+  "note": "The CMOS sets (wdc65c02, rockwell65c02, synertek65c02: 256 files x 10,000 cases, per-cycle [address, value, read/write]) are pinned by revision but only their READMEs were checked out in Phase 0; /rockwell65c02/ is checked out in full (about 1 GB, rung 1b, Aubrey's decision 6); widen the list to /wdc65c02/ for the Lynx plan. Emulator-derived."
  },
  {
   "path": "reference/src/mame",
