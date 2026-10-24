@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from compare_cycles import SRC, ROOT, sst, table  # noqa: E402
+from compare_cycles import ROOT, SRC, sst, table
 
 PDF = ROOT / "reference" / "docs" / "huc6280-software-manual.pdf"
 ROW = re.compile(

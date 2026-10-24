@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from sst_reader import CORPUS, ROOT, tests  # noqa: E402
+from sst_reader import CORPUS, ROOT, tests
 
 SRC = ROOT / "reference" / "src"
 

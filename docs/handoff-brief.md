@@ -337,3 +337,15 @@ judge. On item 2 Aubrey was asked specifically whether the timer and interrupt
 registers should instead live here in a `huc6280.onchip` module (a Data East
 arcade board also uses them) and chose the board, with import-boundary tests in
 the board so they can move out, never be copied, if a second consumer is built.
+
+## Built (2026-10-24)
+
+The build session followed the brief; where it refined it:
+
+- **Layout.** `src/huc6280/`: `cpu.py`, `_core.py` (registers, mapper, cycle primitives, addressing modes), `_dispatch.py` (handler, mode, mnemonic, operand form, base cycles), `_alu.py`, `_loads.py`, `_shifts.py`, `_bits.py` (RMB SMB BBR BBS TSB TRB), `_control.py`, `_hudson.py` (also TST), `_block.py`, `state.py`, `disasm.py`, `debug.py`, `trace.py`, `console.py`, `harness.py`, `__main__.py`.
+- **The bus contract is as written**: `idle(address | None)`, `cpu.kind` is `"read"`, `"write"`, `"dummy"` or `"idle"`, `cpu.high_speed`, `cpu.physical(logical)`, one `step()` per block transfer. The decision-5 defaults are class attributes: `interrupt_entry_cycles = 8` (C3), `tma_multiple = "or"` (C6), `zero_page_pointer_wraps = True` (U8), `block_reads_hardware_page_as_zero = True` (C9), `sbc_honours_t = False` (C5), `nop_63_cycles = 2` (C4), plus `tsb_z_from_test = False` (C12). C7 (the speed change holds for the last cycle) is the code's order of operations in `_hudson.py`.
+- **Interrupts.** `set_irq_lines(irq1, irq2, tiq)`, `irq_lines`, and the `irq_disable` property (the `$1402` layout); the vector is chosen at entry. NMI and reset are 6502-python's `request_*`.
+- **Debugger.** Breakpoints on the logical PC and `add_physical_breakpoint`; watchpoints and tracked accesses physical (kinds `r`, `w`, `d`, `i`).
+- **Rungs.** 0, 1, 1b, 2, 3, 4 and 5 are done (docs/validation.md). Rung 6 is the board's.
+
+Still open for Aubrey (none blocks the board): decision 7 (building Mednafen as a second referee) was not done; decision 8 (public after rung 1) is waiting, the repository is local; the 16 block-transfer cases whose final A, X, Y or RAM the data flow does not reproduce (validation.md, rung 1), and C12-C17 are recorded as undecidable here.

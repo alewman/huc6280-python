@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from compare_cycles import SRC, sst, table  # noqa: E402
+from compare_cycles import SRC, sst, table
 
 ALIASES = {"CPA": "CMP", "NOP": "NOP"}
 MODE_TEXT = {
