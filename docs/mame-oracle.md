@@ -156,21 +156,20 @@ next line and the cycle count with MAME's `totalcycles` delta (`scripts/mame_rep
 21.0 million instructions, 0 register or mapper divergences, with these differences, all
 explained and counted (the report prints them):
 
-- **Interrupt entry (C3).** 35,000-odd entries (IRQ1 and the timer); the replay steps the entry
+- **Interrupt entry (C3).** 30,000-odd entries (IRQ1 and the timer); the replay steps the entry
   when MAME's next line is at a vector's target with three more bytes on the stack. MAME charges
   7 cycles, the core 8: every entry differs by exactly that one cycle.
 - **`CSH`/`CSL` (C7).** 3 of 21 million instructions: MAME bills the old speed for all three
   cycles, the core switches before the last (+3 units at 7.16 MHz when going to high speed, -3
   coming back).
 - **Interrupts taken a step earlier than the core's poll (U21).** After `CLI` MAME takes a
-  pending interrupt at once (about 1,100 times: the timer after `CLI` in Blazing Lazers 527
-  times); Mesen, Mednafen and the core let one more instruction run. The replay forces the entry
+  pending interrupt at once (about 600 times: 543 of them in Blazing Lazers); Mesen, Mednafen and the core let one more instruction run. The replay forces the entry
   and counts it. Which is right is *undecidable here* (HW HB-12 says "sampled in the last bus
   cycle"; whether `CLI`'s I counts there is what is unknown).
 - **Block transfers (C14).** MAME's transfers neither push nor pop A, X, Y; the core's (like
   Mesen's and Mednafen's, HW HB-6) do, so `tii $2000,$2001,$1FFF` (the RAM clear every game
   starts with) leaves A = 0 where MAME leaves it. The replay adopts MAME's A, X, Y after a
-  block transfer (130 times).
+  block transfer (91 times).
 - **Nothing else.** No unlogged hardware-page read, no logged read left unread, no cycle
   difference in any other opcode: the VDC/VCE stretch, the taken-branch cost, `BBR`/`BBS`,
   decimal `ADC` and the T-flag forms all agree with MAME's tables. (The CD-ROM and the timer

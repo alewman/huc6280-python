@@ -11,6 +11,8 @@ Read in this order.
 | [mame-oracle.md](mame-oracle.md) | The verified MAME 0.285 recipe, the working read tap (watchpoints do not), `tg16` for US games, the screen-capture workaround, what MAME does |
 | [handoff-brief.md](handoff-brief.md) | The task for the build session: what 6502-python gives and must gain, the core boundary, the bus contract, layout, rungs, tooling, and **Open decisions for Aubrey** |
 
+Build findings (2026-10-24) are in [undocumented-behavior.md](undocumented-behavior.md) (U23, U24, C12-C15) and the rung rows of [validation.md](validation.md).
+
 ## Findings made while gathering (2026-10-23)
 
 1. **Nothing in 6502-python needs to change** for this core. The frame's

@@ -9,25 +9,31 @@ timer, interrupt registers and PSG, is a decision in
 [docs/handoff-brief.md](docs/handoff-brief.md)); the console is the board,
 [pcengine-python](../pcengine-python).
 
-**Status (2026-10-23): Phase 0 only.** No core code exists. What exists is the
-research, the pinned oracles, the measured agreement between sources and the
-handoff brief for the session that builds it:
+**Status (2026-10-24): the core is built and local.** `HuC6280(CPUFrame)`: every
+cycle one bus callback (`read_byte`, `write_byte`, `idle(address | None)`), the 21-bit
+mapper in the core, interrupt lines on the frame's `IRQ_LINE`, one `step()` per block
+transfer. It subclasses [6502-python](https://github.com/alewman/6502-python)'s frame (pinned
+by commit, never copied) as [65816-python](../65816-python) does. Passing, by rung
+([docs/validation.md](docs/validation.md)):
 
-- every oracle with its tier and a rung plan, honest about what no judge can
-  decide ([docs/validation.md](docs/validation.md));
-- the opcode map, bytes and cycles, the bus shapes of every addressing mode and
-  the 26 opcodes where four emulators disagree ([docs/timing.md](docs/timing.md));
-- 22 quirks and 11 contradictions, each with its tier
-  ([docs/undocumented-behavior.md](docs/undocumented-behavior.md));
-- a verified headless MAME 0.285 recipe for PC Engine, TurboGrafx-16 and
-  SuperGrafx ([docs/mame-oracle.md](docs/mame-oracle.md)).
+- 0: the opcode map against Hudson's software manual (234 opcodes);
+- 1: SingleStepTests `huc6280`, 640,000 of 640,000 cases (emulator tier, masks counted);
+- 1b: the Rockwell 65C02 corpus, results only, 2,089,891 cases on 209 shared opcodes;
+- 3: directed tests for the hardware-verified and manufacturer-tier quirks;
+- 4: MAME 0.285 replay of six games, 21.0 million instructions, no register divergence.
 
-It will build on [6502-python](https://github.com/alewman/6502-python)'s frame
-(`CPUFrame`) and tooling hooks, subclassed through their documented surface, as
-[65816-python](../65816-python) does; a pinned dependency, never copied files.
-**There is no hardware-captured per-instruction data and no die-level model of
-this chip**; the volume judge is SingleStepTests `huc6280`, which Mesen
-generated (emulator tier, a detector). Nothing here was run on a real console.
+**There is no hardware-captured per-instruction data and no die-level model of this
+chip**; the volume judges are emulator tier (detectors). Nothing here was run on a real
+console. Tooling at the family bar: `state`, `disasm`, `debug`, `trace`, `console`,
+`harness`, and `python -m huc6280 GAME.pce [--trace out.jsonl | --debug]`.
+
+```sh
+python -m venv .venv && .venv/bin/pip install -e '.[dev]'
+.venv/bin/python -m pytest -m "not slow"           # the quick loop
+python -I scripts/run_single_step.py               # rung 1, whole (PyPy: minutes)
+python -I scripts/run_rockwell.py                  # rung 1b, whole
+python -I scripts/mame_trace.py GAME.7z --io --seconds 2 && python -I scripts/mame_replay.py tests/mame_traces/GAME
+```
 
 ## What is fetched
 
@@ -62,6 +68,8 @@ games kept as `.7z`. No sudo.
 | `opcode_map.py` | the opcode grid with modes, bytes and cycles |
 | `manual_table.py` | bytes and cycles read out of Hudson's software manual, compared |
 | `mame_trace.py` | the MAME per-instruction trace and hardware-page read log, and a screen capture |
+| `run_single_step.py`, `run_rockwell.py` | rungs 1 and 1b over every case, a process per chunk |
+| `mame_replay.py` | rung 4: replay a MAME trace through the core |
 
 Run anything that reads `reference/` with `python -I`. Traces go in
 `tests/mame_traces/` (gitignored); never commit ROMs, traces or fetched files.

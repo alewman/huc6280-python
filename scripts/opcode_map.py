@@ -36,7 +36,9 @@ def parse() -> tuple[list[str], list[str]]:
     text = (SRC / "Mesen2/Core/PCE/PceCpu.cpp").read_text(encoding="utf-8")
     ops = text[text.index("_opTable[]") : text.index("typedef PceAddrMode")]
     names = re.findall(r"&C::(\w+)", ops)
-    modes = re.findall(r"M::(\w+)", text[text.index("_addrMode[]") : text.index("#ifndef DUMMYCPU")])
+    modes = re.findall(
+        r"M::(\w+)", text[text.index("_addrMode[]") : text.index("#ifndef DUMMYCPU")]
+    )
     assert len(names) == len(modes) == 256, (len(names), len(modes))
     return names, modes
 
