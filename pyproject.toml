@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "huc6280-python"
-version = "0.0.0.dev0"
+version = "0.1.0.dev0"
 description = "Readable, pure-Python Hudson HuC6280 core, cycle by cycle, for the PC Engine, TurboGrafx-16 and SuperGrafx"
 readme = "README.md"
 # The floor is the newest Python PyPy supports (3.11 as of PyPy 7.3.23); raise it when PyPy does.
@@ -12,7 +12,7 @@ requires-python = ">=3.11"
 license = { file = "LICENSE" }
 authors = [{ name = "alewman" }]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -21,13 +21,18 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Emulators",
 ]
-# Phase 0: no code yet. The build session adds the 6502-python dependency,
-# pinned by commit, once the PRs in docs/handoff-brief.md ("What 6502-python
-# must gain") have landed; until then there is nothing to import.
-dependencies = []
+# The frame HuC6280 subclasses and the tooling it reuses (docs/handoff-brief.md):
+# 6502-python at PR #9's head, which holds the frame (#8) and the tooling hooks;
+# pinned by commit until a release contains them.
+dependencies = [
+    "6502-python @ git+https://github.com/alewman/6502-python@2146eba3b3da4d2cc6c8fa3994f100bcb5abf039",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff==0.16.8"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/huc6280"]
