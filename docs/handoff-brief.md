@@ -321,3 +321,19 @@ line of code.
     `pcengine-python` adopts it as a rung-6 milestone and reports line-up
     differences by instruction page back to this core as issues**; do not treat
     a passing run as certification of anything below the instruction.
+
+## Decided by the user (Aubrey, 2026-10-23)
+
+All ten recommendations above were taken as written: the names `huc6280-python` /
+`huc6280` / `HuC6280`; the core boundary (MMU, interrupt lines, vector choice and
+the block-transfer zero-read rule in the core; timer, `$1402`/`$1403`, I/O buffer,
+ports and PSG in the board, behind a line API); the frame subclass with no CMOS
+prerequisite; the bus contract (`idle(address | None)`, one `step()` per block
+transfer); the emulator-derived defaults for what no judge decides, each a named
+class attribute; the Rockwell 65C02 corpus fetched after rung 1; Mednafen built as
+a second referee after the MAME replay works; local until rung 1 passes, then
+public; no Rust or `-fast` forks yet; Covell's CPU Test as the board's rung-6
+judge. On item 2 Aubrey was asked specifically whether the timer and interrupt
+registers should instead live here in a `huc6280.onchip` module (a Data East
+arcade board also uses them) and chose the board, with import-boundary tests in
+the board so they can move out, never be copied, if a second consumer is built.
