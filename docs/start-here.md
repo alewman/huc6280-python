@@ -232,7 +232,7 @@ cpu = HuC6280(read_byte, write_byte, idle)
 #                                  dummy-read address the corpus records, or None
 # Inside any callback: cpu.kind is READ, DUMMY_READ, WRITE or IDLE; cpu.high_speed
 # is the current speed; cpu.dummy_read says the access is Mesen's "r-d".
-cycles = cpu.step()    # CPU cycles consumed == number of callbacks made
+cycles = cpu.step()  # CPU cycles consumed == number of callbacks made
 ```
 
 - The board advances its devices **inside** the callbacks, by 3 or 12 master

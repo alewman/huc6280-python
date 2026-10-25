@@ -199,7 +199,7 @@ cpu = HuC6280(read_byte, write_byte, idle)
 #   write_byte(address, value)     a cycle with a data write
 #   idle(address)                  a cycle with no data transfer; address is the
 #                                  dummy-read address (PC + 1) or None for an internal cycle
-cycles = cpu.step()    # CPU cycles consumed == number of callbacks made
+cycles = cpu.step()  # CPU cycles consumed == number of callbacks made
 ```
 
 - Inside any callback, `cpu.high_speed` (bool) says the current speed, and
