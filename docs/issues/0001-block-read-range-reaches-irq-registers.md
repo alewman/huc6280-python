@@ -1,6 +1,6 @@
 # 0001: block-transfer reads of `$1402`/`$1403` reach the interrupt registers
 
-Raised 2026-10-24 by `pcengine-python` M1 (Aubrey asked for it to be raised on the core). Status: open.
+Raised 2026-10-24 by `pcengine-python` M1 (Aubrey asked for it to be raised on the core). Status: resolved 2026-10-24 (parenthesis reading adopted; see Resolution).
 
 ## What the core does
 
@@ -36,7 +36,7 @@ capture settles the end of the range, and there is no judge here that exercises 
 `$1402`. Mark the choice **undecidable here**; the parenthesis is the only reading that makes the
 sentence's own examples true.
 
-## Proposed change (not made)
+## Proposed change (made)
 
 1. Take the parenthesis: `HARDWARE_ZERO_END = 0x1FF7FF` (`$0800`-`$17FF`), keeping
    `block_reads_hardware_page_as_zero` as the single switch. VDC (`$0000`-`$03FF`) and VCE
@@ -49,3 +49,12 @@ sentence's own examples true.
    to `$1402`.
 
 Found by: `pcengine-python` `docs/m1-record.md`, "Core finding".
+
+## Resolution
+
+`HARDWARE_ZERO_END` is `0x1FF7FF` (`$0800`-`$17FF`); the switch is unchanged. U7 and C9 state the
+range and the contradiction (C9 marks the end *undecidable here*). Rung 3 gained tests for
+`$1402`/`$1403`/`$17FF` reading 0 without a device read, `$1800` reading the device, and the
+switch off reading `$1402`. The I/O buffer itself is the board's, so the core's test checks only
+that the device is not asked. Rungs 3 and 4 pass unchanged; `pcengine-python` still needs to
+repin and extend its block-read test.

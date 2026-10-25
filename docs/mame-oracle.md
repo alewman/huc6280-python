@@ -118,7 +118,7 @@ watchpoint recipe that does not work (below), 3,982,940 instructions in
 | interrupt entry | `h6280_cycles(7)`, pushes PCH PCL P (B cleared, T as it stands), `P = (P & ~D) \| I`: T is not cleared explicitly | 8 elsewhere (C3) |
 | interrupt taken | after the next instruction (a one-instruction pipeline: `m_irq_pending`) | the frame's rule |
 | `TMA` several bits | highest bit wins | Mesen ORs (C6) |
-| block transfer | atomic loop, `h6280_cycles(6*len + 17)`; reads the device through `program_read8` | C9: pcetech says reads of `$0800`-`$13FF` return 0 |
+| block transfer | atomic loop, `h6280_cycles(6*len + 17)`; reads the device through `program_read8` | C9: pcetech says reads of `$0800`-`$17FF` return 0 |
 | `CSL`/`CSH` | `m_clocks_per_cycle = 4 / 1` after the instruction's 3 cycles | C7 |
 | VDC/VCE access | +1 cycle in `program_read8`/`program_write8` | U18 |
 | `$63` | 4 cycles | 2 elsewhere (C4) |

@@ -199,7 +199,7 @@ source, destination and length from the three operand words, move one byte per
 | `TAI` | alternates +1, -1... | +1 |
 
 The alternation adds then subtracts one, it does not invert bit 0 (pcetech).
-Reads of the hardware page `$0800`-`$13FF` by a block transfer return **zero**
+Reads of the hardware page `$0800`-`$17FF` by a block transfer return **zero**
 without touching the device or the I/O buffer; writes work (pcetech; this is
 CPU behaviour, so the core owns it, U7). Registers `A`, `X`, `Y` are restored
 at the end whatever happened to them in between. 17 + 6n is confirmed by the

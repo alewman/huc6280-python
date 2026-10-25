@@ -7,16 +7,17 @@ interrupted: the interrupt is taken when it ends (U6, pcetech). The shape is
 Mesen's: 13 cycles of entry, ``i R i W i i`` a byte, 4 of exit (docs/timing.md).
 """
 
-# U7: a block transfer's reads of the hardware page's $0800-$13FF (PSG, timer, port) return 0
-# without touching the device, whatever is there; writes work (pcetech 2.0, hw-verified).
+# U7: a block transfer's reads of the hardware page's $0800-$17FF (PSG, timer, port, interrupt
+# registers) return 0 without touching the device, whatever is there; writes work (pcetech 2.0,
+# hw-verified). The end is the parenthesis's reading, not the stated "$1400" (C9, issue 0001).
 HARDWARE_ZERO_START = 0x1FE800
-HARDWARE_ZERO_END = 0x1FF3FF
+HARDWARE_ZERO_END = 0x1FF7FF
 
 
 class BlockMixin:
     """Private block-transfer implementation."""
 
-    #: C9: pcetech says reads of $0800-$13FF return 0 in a block transfer (hw-verified); MAME and
+    #: C9: pcetech says reads of $0800-$17FF return 0 in a block transfer (hw-verified); MAME and
     #: Mednafen read the device. False reads the device like any access.
     block_reads_hardware_page_as_zero = True
 

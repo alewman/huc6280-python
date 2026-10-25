@@ -216,7 +216,7 @@ def test_u6_block_transfer_runs_to_its_end_before_the_interrupt() -> None:
     assert machine.cpu.pc == 0x6000
 
 
-# -- U7: block-transfer reads of $0800-$13FF return 0 (pcetech 2.0) --------------------------
+# -- U7: block-transfer reads of $0800-$17FF return 0 (pcetech 2.0; end per issue 0001) --------------------------
 
 
 def test_u7_block_reads_of_psg_timer_port_return_zero_and_skip_the_device() -> None:
@@ -228,6 +228,35 @@ def test_u7_block_reads_of_psg_timer_port_return_zero_and_skip_the_device() -> N
     machine.step()
     assert machine.memory[RAM : RAM + 4] == bytes([0, 0, 0, 0])
     assert all(a != 0x1FE800 for kind, a, _ in machine.cycles if kind == "read")
+
+
+def test_u7_block_reads_of_interrupt_registers_return_zero_and_skip_the_device() -> None:
+    # pcetech 2.0: "you can't read the joystick port, timer, or IRQ registers" ($1402/$1403).
+    for source, physical in ((0x1402, 0x1FF402), (0x1403, 0x1FF403), (0x17FF, 0x1FF7FF)):
+        machine = Host(mpr=(0xFF, 0xF8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00))
+        machine.load(bytes([0x73, source & 0xFF, source >> 8, 0x00, 0x20, 0x01, 0x00]))
+        machine.memory[physical] = 9
+        machine.memory[RAM] = 5
+        machine.step()
+        assert machine.memory[RAM] == 0
+        assert all(a != physical for kind, a, _ in machine.cycles if kind == "read")
+
+
+def test_u7_block_reads_past_the_hardware_page_block_are_ordinary() -> None:
+    machine = Host(mpr=(0xFF, 0xF8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00))
+    machine.load(bytes([0x73, 0x00, 0x18, 0x00, 0x20, 0x01, 0x00]))  # $1800: off-die
+    machine.memory[0x1FF800] = 9
+    machine.step()
+    assert machine.memory[RAM] == 9
+
+
+def test_u7_the_switch_off_reads_the_interrupt_registers() -> None:
+    machine = Host(mpr=(0xFF, 0xF8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00))
+    machine.cpu.block_reads_hardware_page_as_zero = False
+    machine.load(bytes([0x73, 0x02, 0x14, 0x00, 0x20, 0x01, 0x00]))
+    machine.memory[0x1FF402] = 9
+    machine.step()
+    assert machine.memory[RAM] == 9
 
 
 def test_u7_vdc_reads_in_a_block_transfer_are_ordinary() -> None:

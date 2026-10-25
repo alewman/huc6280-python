@@ -296,7 +296,7 @@ line of code.
    Defaults, each labelled emulator-derived in the code and docs: interrupt entry
    8 cycles (C3), `TMA` with several bits ORs (C6), a speed change takes effect for
    the instruction's last cycle and costs 3 (C7), zero-page pointers wrap in the
-   zero page (U8), block reads of `$0800`-`$13FF` return 0 (C9, hw-verified),
+   zero page (U8), block reads of `$0800`-`$17FF` return 0 (C9, hw-verified),
    `SBC` ignores T (C5), `$63` is a 2-cycle `NOP` (C4). **Recommend: adopt these**,
    keep each as a named class attribute so a board or a later capture can change
    it.
