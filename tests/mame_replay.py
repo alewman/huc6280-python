@@ -232,7 +232,13 @@ def _take_interrupt(replay: Replay, line: Line, report: Report, previous: int = 
     return name
 
 
-def replay(rom: bytes, log: Path, limit: int | None = None, max_divergences: int = 50) -> Report:
+def replay(
+    rom: bytes,
+    log: Path,
+    limit: int | None = None,
+    max_divergences: int = 50,
+    adopt_block: bool = True,
+) -> Report:
     report = Report()
     harness = Replay(rom)
     cpu = harness.cpu
@@ -295,7 +301,7 @@ def replay(rom: bytes, log: Path, limit: int | None = None, max_divergences: int
             report.unread += len(harness.reads)
             for address, _ in harness.reads:
                 report.unread_addresses[address] += 1
-        if opcode in BLOCK_OPCODES and following is not None:
+        if adopt_block and opcode in BLOCK_OPCODES and following is not None:
             # C14: MAME's block transfers keep A, X and Y in the CPU and never push them;
             # the core (like Mesen and Mednafen) pushes and pops them (HW HB-6), so a
             # transfer over the stack gives them back overwritten. MAME's are adopted.

@@ -8,6 +8,7 @@ Read in this order.
 | [timing.md](timing.md) | The measured agreement (Hudson's manual vs the emulators, 17 + 6n in 12,500 cases); the opcode and base-cycle grids; the bus shape of every addressing mode; the 65C02 comparison; interrupt, reset and speed; the 26 opcodes where four emulators differ |
 | [undocumented-behavior.md](undocumented-behavior.md) | U1-U22 quirks and C1-C11 contradictions, each with its tier |
 | [validation.md](validation.md) | Every oracle by tier with pins, what does not exist, the rung plan, what no judge decides, the minimal harness |
+| [mednafen-oracle.md](mednafen-oracle.md) | The patched, built Mednafen 1.32.1 as a second emulator referee: recipe, traps, six-game replay and its votes on the C-entries |
 | [mame-oracle.md](mame-oracle.md) | The verified MAME 0.285 recipe, the working read tap (watchpoints do not), `tg16` for US games, the screen-capture workaround, what MAME does |
 | [handoff-brief.md](handoff-brief.md) | The task for the build session: what 6502-python gives and must gain, the core boundary, the bus contract, layout, rungs, tooling, and **Open decisions for Aubrey** |
 

@@ -1,0 +1,102 @@
+--- a/src/pce/huc6280.cpp
++++ b/src/pce/huc6280.cpp
+@@ -31,6 +31,8 @@
+ #include "huc6280.h"
+ 
+ #include <string.h>
++#include <stdio.h>
++#include <unistd.h>
+ 
+ #ifdef WANT_DEBUGGER
+  #include <trio/trio.h>
+@@ -38,6 +40,11 @@
+ 
+ namespace MDFN_IEN_PCE
+ {
++
++// huc6280-python trace patch: one line pair per instruction, like scripts/mame_trace.py
++uint64 pce_trace_master;
++FILE *pce_trace_file;
++uint64 pce_trace_left;
+ 
+ INLINE void HuC6280::LastCycle(void)
+ {
+@@ -679,6 +686,13 @@
+ 	 }
+          PC &= 0xFFFF;     // Our cpu core can only handle PC going about 8192 bytes over, so make sure it never gets that far...
+ 
++	 if(pce_trace_file)
++	 {
++	  fprintf(pce_trace_file, "%X %X %X %X %X %X %llu\nM %X %X %X %X %X %X %X %X\n", PC, A, X, Y, S, P,
++		  (unsigned long long)(pce_trace_master / 3), MPR[0], MPR[1], MPR[2], MPR[3], MPR[4], MPR[5], MPR[6], MPR[7]);
++	  if(!--pce_trace_left) { fflush(pce_trace_file); _exit(0); }
++	 }
++
+ 	 lastop = RdOp(PC);
+ 
+ 	 PC++;
+--- a/src/pce/huc6280.h
++++ b/src/pce/huc6280.h
+@@ -7,6 +7,10 @@
+ 
+ namespace MDFN_IEN_PCE
+ {
++
++extern uint64 pce_trace_master;	// huc6280-python trace patch
++extern FILE *pce_trace_file;
++extern uint64 pce_trace_left;
+ class alignas(128) HuC6280
+ {
+ 	public:
+@@ -441,6 +445,7 @@
+ 	INLINE void ADDCYC(int x)
+ 	{
+ 	 int master = (x * 3) << speed_shift_cache;
++	 pce_trace_master += master;	// huc6280-python trace patch
+ 
+ 	 timestamp += master;
+ 	 next_event -= master;
+@@ -452,6 +457,7 @@
+ 
+         INLINE void ADDCYC_MASTER(int master)
+         {
++         pce_trace_master += master;	// huc6280-python trace patch
+          timestamp += master;
+          next_event -= master;
+          next_user_event -= master;
+--- a/src/pce/pce.cpp
++++ b/src/pce/pce.cpp
+@@ -126,7 +126,18 @@
+  BaseRAM[A & 0x1FFF] = V;
+ }
+ 
++static DECLFR(IORead_);
++
++// huc6280-python trace patch: log hardware-page reads as MAME's tap does ("[luaengine] R addr value")
+ static DECLFR(IORead)
++{
++ uint8 ret = IORead_(A);
++ if(pce_trace_file && !PCE_InDebug && !((A & 0x1FFF) >= 0x0800 && HuCPU.InBlockMove()))
++  fprintf(pce_trace_file, "[luaengine] R %X %X\n\n", 0x1FE000 | (A & 0x1FFF), ret);
++ return ret;
++}
++
++static DECLFR(IORead_)
+ {
+  A &= 0x1FFF;
+ 
+@@ -352,6 +363,14 @@
+ 
+ static MDFN_COLD void Load(GameFile* gf)
+ {
++ // huc6280-python trace patch: MEDNAFEN_TRACE=file, MEDNAFEN_TRACE_COUNT=instructions to log
++ if(getenv("MEDNAFEN_TRACE"))
++ {
++  pce_trace_file = fopen(getenv("MEDNAFEN_TRACE"), "wb");
++  pce_trace_left = getenv("MEDNAFEN_TRACE_COUNT") ? strtoull(getenv("MEDNAFEN_TRACE_COUNT"), nullptr, 10) : 0;
++  if(!pce_trace_left) pce_trace_left = ~0ULL;
++ }
++
+  try
+  {
+   uint8 hes_header[4];

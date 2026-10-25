@@ -28,6 +28,11 @@ def main() -> int:
     parser.add_argument("--limit", type=int, help="stop after this many instructions")
     parser.add_argument("--max-divergences", type=int, default=50)
     parser.add_argument(
+        "--no-adopt-block",
+        action="store_true",
+        help="keep the core's A, X, Y after a block transfer (C14): for Mednafen, which pops them",
+    )
+    parser.add_argument(
         "--samples", action="store_true", help="show cases of each cycle difference"
     )
     args = parser.parse_args()
@@ -37,6 +42,7 @@ def main() -> int:
         args.trace / "error.log",
         args.limit,
         args.max_divergences,
+        not args.no_adopt_block,
     )
     print(report.summary())
     if args.samples:

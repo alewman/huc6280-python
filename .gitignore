@@ -22,6 +22,7 @@ reference/
 # MAME oracle runs (scripts/mame_trace.py): traces, error.log, cfg, snapshots
 # and the copied cartridge. Never commit ROMs or traces.
 tests/mame_traces/
+tests/mednafen_traces/
 *.trace
 error.log
 *.pce
