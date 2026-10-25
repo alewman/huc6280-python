@@ -1,19 +1,19 @@
 # huc6280-python
 
-A readable, pure-Python **Hudson Soft HuC6280** CPU core, planned: the 8-bit
+A readable, pure-Python **Hudson Soft HuC6280** CPU core: the 8-bit
 processor of the PC Engine, TurboGrafx-16, SuperGrafx and the CD-ROM systems, a
 CMOS 6502-family core with a 21-bit memory mapper (eight 8 KB mapping registers),
 block transfers, the T flag, a 7.16/1.79 MHz clock switch and a handful of Hudson
 instructions. This repository is only the CPU (the boundary, with the on-die
 timer, interrupt registers and PSG, is a decision in
 [docs/handoff-brief.md](docs/handoff-brief.md)); the console is the board,
-[pcengine-python](../pcengine-python).
+`pcengine-python`.
 
-**Status (2026-10-24): the core is built and local.** `HuC6280(CPUFrame)`: every
+**Status (2026-10-24): the core is built.** `HuC6280(CPUFrame)`: every
 cycle one bus callback (`read_byte`, `write_byte`, `idle(address | None)`), the 21-bit
 mapper in the core, interrupt lines on the frame's `IRQ_LINE`, one `step()` per block
 transfer. It subclasses [6502-python](https://github.com/alewman/6502-python)'s frame (pinned
-by commit, never copied) as [65816-python](../65816-python) does. Passing, by rung
+by commit, never copied) as `65816-python` does. Passing, by rung
 ([docs/validation.md](docs/validation.md)):
 
 - 0: the opcode map against Hudson's software manual (234 opcodes);
