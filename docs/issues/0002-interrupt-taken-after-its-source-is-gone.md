@@ -1,7 +1,7 @@
 # 0002: an interrupt polled one cycle early is entered after its source has gone, through the IRQ2 vector
 
 Raised 2026-10-24 by `pcengine-python` M2 (first ten library titles against Mesen2 and Beetle PCE).
-Status: open. Nothing in the core was changed by the reporter.
+Status: **closed** (2026-10-24, "Fix issue 0002"): `vanished_interrupt` class attribute, default Mesen2's split rule (timer re-checked and dropped, IRQ1/IRQ2 taken as polled); `"latched"` (the HDL) and `"drop"` are the other modes; no mode falls through to `$FFF6`. See C18 in undocumented-behavior.md; rung-3 tests `test_c18_*`.
 
 ## What happens
 

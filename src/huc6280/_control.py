@@ -275,6 +275,11 @@ class ControlMixin:
             self._requests &= ~NMI_LATCH
         else:
             vector = self._maskable_vector()
+            if vector is None:
+                # Nothing is left to enter: the instruction runs instead (issue 0002, C18).
+                self._polled = None
+                self._polled_i = None
+                return self._execute()
         # Two dummy reads (the opcode and the byte after it, both discarded), the pushes,
         # the vector, and an internal cycle (Mesen's ProcessIrq; C3, C8).
         self._dummy(self.pc)
@@ -290,14 +295,42 @@ class ControlMixin:
         self._deferred = None
         return self._cycles
 
-    def _maskable_vector(self) -> int:
-        """The vector of the highest-priority source that is asserted and enabled (HW HB-13)."""
-        pending = self._lines & ~self._irq_disable
+    #: C18: what an interrupt does when its source has gone between the poll (the end of the
+    #: instruction's second-to-last cycle) and the entry, as when a handler runs ``CLI`` and then
+    #: acknowledges the timer in the last cycle of ``STZ $1403``. ``"mesen2"`` (default,
+    #: emulator-derived, Mesen2's documented rule): the timer is re-checked at entry and dropped if
+    #: it has gone, IRQ1 and IRQ2 are taken through their own vector as the poll saw them.
+    #: ``"latched"``: every source is taken as the poll saw it (what srg320's HDL does, read from its
+    #: source: the ``*_INT`` registers are latched in the last cycle). ``"drop"``: dropped unless a
+    #: source is still asserted at entry. In every mode an interrupt with no source left is never
+    #: entered through IRQ2 by default (issue 0002).
+    vanished_interrupt = "mesen2"
+
+    def _boundary_interrupt(self) -> int:
+        # Which lines the poll saw: the requests changed in the last cycle (after the poll) leave
+        # the frame's _polled set, and the lines as they were before that change are _lines_before.
+        self._poll_lines = self._lines_before if self._polled is not None else self._lines
+        return super()._boundary_interrupt()
+
+    def _maskable_vector(self) -> int | None:
+        """The vector of the highest-priority source the entry takes (HW HB-13), or None to drop."""
+        enabled = ~self._irq_disable & 7
+        polled = self._poll_lines & enabled
+        live = self._lines & enabled
+        mode = self.vanished_interrupt
+        if mode == "mesen2":
+            pending = (polled & ~TIQ_BIT) | (polled & live & TIQ_BIT)
+        elif mode == "drop":
+            pending = polled if live else 0
+        else:
+            pending = polled
         if pending & TIQ_BIT:
             return VECTOR_TIQ
         if pending & IRQ1_BIT:
             return VECTOR_IRQ1
-        return VECTOR_IRQ2
+        if pending & IRQ2_BIT:
+            return VECTOR_IRQ2
+        return None
 
     def _accept_reset(self) -> int:
         """The start sequence (HW HB-18; U2): MPR7 = 0, I set, D and T clear, low speed."""
@@ -339,9 +372,10 @@ class ControlMixin:
         IRQ1 is the VDC's, IRQ2 the HuCard connector's and the CD-ROM's, TIQ the
         timer's (pcetech 2.1). A source masked by ``irq_disable`` is remembered, not taken.
         """
-        self._lines = (
-            (IRQ2_BIT if irq2 else 0) | (IRQ1_BIT if irq1 else 0) | (TIQ_BIT if tiq else 0)
-        )
+        lines = (IRQ2_BIT if irq2 else 0) | (IRQ1_BIT if irq1 else 0) | (TIQ_BIT if tiq else 0)
+        if self._deferred is None and lines != self._lines:
+            self._lines_before = self._lines  # what the poll saw if no access follows (C18)
+        self._lines = lines
         self._sync_irq()
 
     @property

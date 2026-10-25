@@ -62,6 +62,8 @@ class HuC6280(
         self.idle = _no_idle if idle is None else idle
         self._init_registers()
         self._lines = 0
+        self._lines_before = 0
+        self._poll_lines = 0
         self._irq_disable = 0
         cls = type(self)
         if "_table" not in cls.__dict__:
@@ -132,6 +134,7 @@ class HuC6280(
         self._mpr_latch = state.mpr_latch
         self._lines = (0x02 if state.irq1 else 0) | (0x01 if state.irq2 else 0)
         self._lines |= 0x04 if state.tiq else 0
+        self._lines_before = self._poll_lines = self._lines
         self._irq_disable = state.irq_disable
         self._restore_poll(state)
 

@@ -637,3 +637,77 @@ def test_u8_zero_page_pointer_wraps_by_default() -> None:
 def test_c4_opcode_63_is_a_two_cycle_nop_by_default() -> None:
     machine = host(bytes([0x63]))
     assert machine.step() == 2
+
+
+# -- C18 (issue 0002): a source that goes away in the last cycle of the instruction that polled it ----
+
+
+def _vanishing(source: str, mode: str | None = None) -> Host:
+    """``CLI; STZ $1403; NOP`` with ``source`` asserted; the STZ's write lowers it (the timer
+    handler of After Burner II). MPR0 = $FF so logical $1403 is the hardware page."""
+    machine = Host(mpr=(0xFF, 0xF8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00))
+    machine.load(bytes([0x58, 0x9C, 0x03, 0x14, 0xEA]))
+    for vector, target in ((0xFFF6, 0x6000), (0xFFF8, 0x6100), (0xFFFA, 0x6200)):
+        machine.memory[vector - 0xE000 : vector - 0xE000 + 2] = bytes([target & 0xFF, target >> 8])
+    cpu = machine.cpu
+    if mode:
+        cpu.vanished_interrupt = mode
+    cpu.p = I
+    lines = {
+        "tiq": (False, False, True),
+        "irq1": (True, False, False),
+        "irq2": (False, True, False),
+    }
+    cpu.set_irq_lines(*lines[source])
+    original = machine.write_byte
+
+    def write(address: int, value: int) -> None:
+        original(address, value)
+        if address == 0x1FF403:
+            cpu.set_irq_lines(False, False, False)
+
+    cpu.write_byte = write
+    machine.step(2)  # CLI, then the STZ that acknowledges
+    return machine
+
+
+def test_c18_a_vanished_timer_interrupt_is_dropped_by_default() -> None:
+    # Mesen2 (emulator-derived): "Order of the Griffon" expects the timer IRQ not to occur after
+    # the STA. The old fall-through to the IRQ2 vector ($FFF6) is gone in every mode.
+    machine = _vanishing("tiq")
+    cycles = machine.step()
+    assert machine.cpu.pc == CODE + 5 and cycles == 2  # the NOP ran; no entry
+    assert not machine.cpu.p & I
+
+
+@pytest.mark.parametrize(("source", "vector"), [("irq1", 0x6100), ("irq2", 0x6000)])
+def test_c18_a_vanished_vdc_or_irq2_interrupt_is_still_taken_by_default(
+    source: str, vector: int
+) -> None:
+    # Mesen2: "Games expect the VDC IRQ to occur after the LDA" (Jackie Chan, Final Soldier).
+    machine = _vanishing(source)
+    assert machine.step() == 8 and machine.cpu.pc == vector
+
+
+def test_c18_latched_mode_takes_the_timer_through_its_own_vector() -> None:
+    # srg320's HDL latches every source in the last cycle (read from HUC6280_CPU.vhd).
+    machine = _vanishing("tiq", "latched")
+    assert machine.step() == 8 and machine.cpu.pc == 0x6200
+
+
+@pytest.mark.parametrize("source", ["tiq", "irq1", "irq2"])
+def test_c18_drop_mode_drops_every_vanished_interrupt(source: str) -> None:
+    machine = _vanishing(source, "drop")
+    machine.step()
+    assert machine.cpu.pc == CODE + 5
+
+
+def test_c18_a_source_still_asserted_is_taken_in_every_mode() -> None:
+    for mode in ("mesen2", "latched", "drop"):
+        machine = Host()
+        machine.cpu.vanished_interrupt = mode
+        machine.load(bytes([0xEA]))
+        machine.memory[0x1FFA:0x1FFC] = bytes([0x00, 0x62])
+        machine.cpu.p = 0
+        machine.cpu.set_irq_lines(False, False, True)
+        assert machine.step() == 8 and machine.cpu.pc == 0x6200
