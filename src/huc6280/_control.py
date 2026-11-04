@@ -306,10 +306,36 @@ class ControlMixin:
     #: entered through IRQ2 by default (issue 0002).
     vanished_interrupt = "mesen2"
 
+    #: U25 (issue 0003): which cycle of an instruction the interrupt lines are sampled at.
+    #: ``"second_to_last"`` (default, the 6502 frame's rule, U21): the end of the second-to-last
+    #: cycle, so a line that rises in the last cycle is seen one instruction later. ``"last"``: the
+    #: levels at the boundary all count, a line that rises (or drops) in the last cycle included.
+    #: ``"mednafen"``: Mednafen's rule, read from ``huc6280.cpp`` (``RunSub``): IRQ1 and IRQ2 are
+    #: taken from ``IRQSample``, taken at the start of the last cycle (the default's point), but
+    #: the timer is tested against the live ``IRQlow`` at the boundary
+    #: (``IRQlow & IQTIMER & IRQMask``), so TIQ alone behaves as ``"last"``. The I flag is the
+    #: sampled one in every mode (U21). Emulator tier; no source above it says.
+    irq_poll_cycle = "second_to_last"
+
     def _boundary_interrupt(self) -> int:
         # Which lines the poll saw: the requests changed in the last cycle (after the poll) leave
         # the frame's _polled set, and the lines as they were before that change are _lines_before.
+        deferred = self._polled is not None and not self._polled & NO_POLL
         self._poll_lines = self._lines_before if self._polled is not None else self._lines
+        mode = self.irq_poll_cycle
+        if mode != "second_to_last":
+            if mode == "last":
+                seen = self._lines
+            elif mode == "mednafen":
+                seen = (self._poll_lines & ~TIQ_BIT) | (self._lines & TIQ_BIT)
+            else:
+                raise ValueError(f"unknown irq_poll_cycle {mode!r}")
+            self._poll_lines = seen
+            if deferred:
+                # The frame kept the requests from before the last cycle; the mode counts the
+                # levels at the boundary instead.
+                asserted = IRQ_LINE if seen & ~self._irq_disable & 7 else 0
+                self._polled = (self._polled & ~IRQ_LINE) | asserted
         return super()._boundary_interrupt()
 
     def _maskable_vector(self) -> int | None:

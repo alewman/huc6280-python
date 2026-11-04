@@ -8,7 +8,7 @@ default the brief adopted. Cycle counts are SW's.
 """
 
 import pytest
-from directed import CODE, RAM, Host
+from directed import CODE, CODE_PHYSICAL, RAM, Host
 
 from huc6280 import HuC6280
 
@@ -642,7 +642,7 @@ def test_c4_opcode_63_is_a_two_cycle_nop_by_default() -> None:
 # -- C18 (issue 0002): a source that goes away in the last cycle of the instruction that polled it ----
 
 
-def _vanishing(source: str, mode: str | None = None) -> Host:
+def _vanishing(source: str, mode: str | None = None, poll: str | None = None) -> Host:
     """``CLI; STZ $1403; NOP`` with ``source`` asserted; the STZ's write lowers it (the timer
     handler of After Burner II). MPR0 = $FF so logical $1403 is the hardware page."""
     machine = Host(mpr=(0xFF, 0xF8, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00))
@@ -652,6 +652,8 @@ def _vanishing(source: str, mode: str | None = None) -> Host:
     cpu = machine.cpu
     if mode:
         cpu.vanished_interrupt = mode
+    if poll:
+        cpu.irq_poll_cycle = poll
     cpu.p = I
     lines = {
         "tiq": (False, False, True),
@@ -711,3 +713,127 @@ def test_c18_a_source_still_asserted_is_taken_in_every_mode() -> None:
         machine.cpu.p = 0
         machine.cpu.set_irq_lines(False, False, True)
         assert machine.step() == 8 and machine.cpu.pc == 0x6200
+
+
+# -- U25 (issue 0003): the interrupt poll point, a class attribute with three modes --------------------
+
+
+def _rise_in_cycle(machine: Host, cycle: int, lines: tuple[bool, bool, bool]) -> None:
+    """Raise ``lines`` from inside the callback of the ``cycle``-th bus cycle of the next step."""
+    cpu = machine.cpu
+    count = [0]
+    originals = (cpu.read_byte, cpu.write_byte, cpu.idle)
+
+    def tick() -> None:
+        count[0] += 1
+        if count[0] == cycle:
+            cpu.set_irq_lines(*lines)
+
+    def read(address: int) -> int:
+        value = originals[0](address)
+        tick()
+        return value
+
+    def write(address: int, value: int) -> None:
+        originals[1](address, value)
+        tick()
+
+    def idle(address: int | None) -> None:
+        originals[2](address)
+        tick()
+
+    cpu.read_byte, cpu.write_byte, cpu.idle = read, write, idle
+
+
+def _restore_bus(machine: Host) -> None:
+    machine.cpu.read_byte, machine.cpu.write_byte = machine.read_byte, machine.write_byte
+    machine.cpu.idle = machine.idle
+
+
+def _nop_machine(mode: str | None) -> Host:
+    machine = host(bytes([0xEA, 0xEA, 0xEA]), p=0)  # NOP; NOP; NOP, I clear
+    machine.memory[0x1FF8:0x1FFA] = bytes([0x00, 0x60])  # IRQ1 -> $6000
+    if mode:
+        machine.cpu.irq_poll_cycle = mode
+    return machine
+
+
+def test_u25_default_is_the_second_to_last_cycle() -> None:
+    assert HuC6280.irq_poll_cycle == "second_to_last"
+
+
+def test_u25_default_a_line_rising_in_the_last_cycle_is_taken_one_instruction_later() -> None:
+    machine = _nop_machine(None)
+    _rise_in_cycle(machine, 2, (True, False, False))  # NOP's last (second) cycle
+    machine.step()
+    _restore_bus(machine)
+    assert machine.step() == 2  # the second NOP still runs
+    assert machine.step() == 8 and machine.ram(0x1FE) == (CODE + 2) & 0xFF  # entered at CODE + 2
+
+
+@pytest.mark.parametrize("mode", ["last", "mednafen"])
+def test_u25_a_line_rising_before_the_last_cycle_is_taken_in_every_mode(mode: str) -> None:
+    machine = _nop_machine(mode)
+    _rise_in_cycle(machine, 1, (True, False, False))
+    machine.step()
+    _restore_bus(machine)
+    assert machine.step() == 8 and machine.cpu.pc == 0x6000
+
+
+def test_u25_last_mode_takes_a_line_rising_in_the_last_cycle_at_that_boundary() -> None:
+    machine = _nop_machine("last")
+    _rise_in_cycle(machine, 2, (True, False, False))
+    machine.step()
+    _restore_bus(machine)
+    assert machine.step() == 8
+    assert machine.ram(0x1FE) == (CODE + 1) & 0xFF  # the pushed address is the next NOP
+
+
+@pytest.mark.parametrize("source", ["tiq", "irq1", "irq2"])
+def test_u25_last_mode_ignores_a_line_that_drops_in_the_last_cycle(source: str) -> None:
+    # The C18 program (CLI; STZ $1403 lowering the line in its last cycle): the default takes
+    # IRQ1 and IRQ2 (Mesen2's rule), the levels at the boundary take nothing.
+    machine = _vanishing(source, poll="last")
+    assert machine.step() == 2
+
+
+def test_u25_mednafen_mode_counts_a_timer_rising_in_the_last_cycle_not_irq1() -> None:
+    # Mednafen's RunSub: `IRQlow & IQTIMER & IRQMask` is live, IRQ1 and IRQ2 are IRQSample.
+    timer = _nop_machine("mednafen")
+    machine = _nop_machine("mednafen")
+    machine.memory[0x1FFA:0x1FFC] = bytes([0x00, 0x62])
+    _rise_in_cycle(machine, 2, (False, False, True))
+    machine.step()
+    _restore_bus(machine)
+    assert machine.step() == 8 and machine.cpu.pc == 0x6200
+    _rise_in_cycle(timer, 2, (True, False, False))
+    timer.step()
+    _restore_bus(timer)
+    assert timer.step() == 2  # IRQ1 waits one instruction, as in the default
+
+
+def _rti_return_address(mode: str | None) -> int:
+    """The address an interrupt that rises in the last cycle of RTI pushes."""
+    machine = host(bytes([0x40]), s=0xFC)  # RTI at CODE; returns to CODE + 1 (a NOP)
+    machine.memory[RAM + 0x1FD : RAM + 0x200] = bytes([0x00, (CODE + 1) & 0xFF, (CODE + 1) >> 8])
+    machine.load(bytes([0xEA, 0xEA, 0xEA]), at=CODE_PHYSICAL + 1)
+    machine.memory[0x1FF8:0x1FFA] = bytes([0x00, 0x60])
+    machine.cpu.p = I
+    if mode:
+        machine.cpu.irq_poll_cycle = mode
+    _rise_in_cycle(machine, 7, (True, False, False))  # RTI is 7 cycles
+    machine.step()
+    _restore_bus(machine)
+    assert machine.cpu.pc == CODE + 1 and not machine.cpu.p & I
+    machine.step(1)
+    if machine.cpu.pc != 0x6000:
+        machine.step(1)
+    assert machine.cpu.pc == 0x6000
+    return machine.ram(0x1FF) << 8 | machine.ram(0x1FE)
+
+
+def test_u25_rti_return_address_per_mode() -> None:
+    # Bonk's Adventure (lockstep stop 235,057): the pushed address differs by an instruction.
+    assert _rti_return_address(None) == CODE + 2  # the NOP at the return address ran first
+    assert _rti_return_address("last") == CODE + 1  # entered at the RTI's own boundary
+    assert _rti_return_address("mednafen") == CODE + 2  # IRQ1 is sampled, as the default

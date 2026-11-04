@@ -1,7 +1,7 @@
 # 0003: where the core samples an interrupt (U21) is the common cause of four lockstep stops and the Covell spread
 
 Raised 2026-11-04 by `pcengine-python` M1 and M5 (Covell calibration, Mednafen and MAME lockstep).
-Status: **open**. A question and an experiment, not a defect report; nothing here is shown wrong.
+Status: **experiment done 2026-11-04, no mode adopted; the default is unchanged.** The modes stay as a named switch (`irq_poll_cycle`, U25). A question and an experiment, not a defect report; nothing here is shown wrong.
 
 ## What the board sees
 
@@ -69,3 +69,50 @@ to frame. Both are detectors.
 
 Found by: `pcengine-python` `scripts/covell_calibrate.py`, `scripts/lockstep.py`
 (`docs/m1-record.md`, `docs/m5-lockstep-record.md`).
+
+## Result (2026-11-04)
+
+Core: `HuC6280.irq_poll_cycle` = `"second_to_last"` (default, unchanged), `"last"`, `"mednafen"` (U25 in
+`undocumented-behavior.md`, which quotes Mednafen's `RunSub`/`LastCycle`). Directed tests in
+`tests/test_directed.py` (U25: default, each mode, a line dropping in the last cycle, a timer against IRQ1,
+an `RTI` return address: default and `mednafen` push `CODE+2`, `last` pushes `CODE+1`). Default mode:
+every existing test is unchanged (see the commit message for the rung results).
+
+Board, core working tree through a path override (the committed pin is unchanged). Covell calibration,
+ours minus photograph, mean / spread over the 7 groups (dots; the default-mode rows reproduce
+`m1-record.md`'s table exactly):
+
+| `vblank_dots` | mode | RAM mean / spread | ROM mean / spread |
+| --- | --- | --- | --- |
+| -8 | second_to_last | +2.4 / 5.6 | +4.0 / 7.0 |
+| -8 | last | +2.4 / 5.6 | +2.3 / 7.6 |
+| -8 | mednafen | +2.4 / 5.6 | +4.0 / 7.0 |
+| -9 | second_to_last | +0.7 / 5.6 | +0.5 / 3.8 |
+| -9 | last | +0.7 / 5.6 | +0.5 / 3.8 |
+| -9 | mednafen | +0.7 / 5.6 | +0.5 / 3.8 |
+| -10 | second_to_last | +0.7 / 5.6 | +0.5 / 3.8 |
+| -10 | last | -0.2 / 4.2 | -1.2 / 4.2 |
+| -10 | mednafen | +0.7 / 5.6 | +0.5 / 3.8 |
+
+No cell is inside 2.4 dots. `last` moves some groups' thresholds by about 1 dot (the two-level jump is
+still there: RAM group 8 at -10 goes to -2.2, ROM groups 4 and 8 to -3.6/-3.2) and lowers the RAM spread
+at -10 to 4.2; `mednafen` changes nothing in the Covell ROM. So the quantum is **not** the poll point.
+
+Mednafen lockstep, first stop (equal instructions; flags "Full" + `--check-reads`; traces of 0.2 M to 3 M
+instructions, R-Type to 3 M only):
+
+| Game | second_to_last | last | mednafen |
+| --- | --- | --- | --- |
+| R-Type I | 3,000,000 (none) | 293,741 | 3,000,000 (none) |
+| Gradius | 107,737 | 51,632 | 107,737 |
+| Final Soldier | 630,583 | 17,357 | no stop in 700,000; next stop 830,985 (4 M trace) |
+| After Burner II | 187 | 187 | 187 |
+| Bomberman '94 | 343,164 | 220,419 | 343,164 |
+| Bonk's Adventure | 235,057 | 175,519 | 235,057 |
+
+`last` is worse everywhere (Mednafen does not count a line that rises in the last cycle for IRQ1/IRQ2).
+`mednafen` moves only Final Soldier (its stops are timer entries), by 200 K instructions; Gradius, Bomberman
+and Bonk are IRQ1 and do not move, so their cause is the VDC's rise time, not the CPU's poll rule.
+
+Adoption rule not met (no Covell spread inside 2.4 dots in either mode), so the default stays. The 18-picture
+gate was not run: nothing was adopted.
