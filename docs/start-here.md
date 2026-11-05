@@ -232,6 +232,9 @@ cpu = HuC6280(read_byte, write_byte, idle)
 #                                  dummy-read address the corpus records, or None
 # Inside any callback: cpu.kind is READ, DUMMY_READ, WRITE or IDLE; cpu.high_speed
 # is the current speed; cpu.dummy_read says the access is Mesen's "r-d".
+# cpu.opcode (read-only) is the opcode of the instruction in progress: set after the fetch
+# callback returns, so operand and write callbacks see it (a board steering ST0/ST1/ST2 to
+# the VDC reads it there); the fetch callback itself sees the previous one.
 cycles = cpu.step()  # CPU cycles consumed == number of callbacks made
 ```
 

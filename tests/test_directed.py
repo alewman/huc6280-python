@@ -837,3 +837,22 @@ def test_u25_rti_return_address_per_mode() -> None:
     assert _rti_return_address(None) == CODE + 2  # the NOP at the return address ran first
     assert _rti_return_address("last") == CODE + 1  # entered at the RTI's own boundary
     assert _rti_return_address("mednafen") == CODE + 2  # IRQ1 is sampled, as the default
+
+
+# -- the public opcode accessor (embedding contract) --------------------------------------
+
+
+def test_opcode_is_public_read_only_and_visible_to_the_write_callback() -> None:
+    # ST0 #$12 (opcode $03) writes the VDC select port: a board that steers ST0-ST2 reads the
+    # opcode from inside the write callback.
+    seen: list[tuple[int, int]] = []
+    machine = host(bytes([0x03, 0x12, 0xEA]))
+    machine.cpu._write = lambda address, value: seen.append((machine.cpu.opcode, address))
+    assert machine.cpu.opcode == 0
+    machine.step()
+    assert seen and all(opcode == 0x03 for opcode, _ in seen)
+    assert machine.cpu.opcode == 0x03
+    machine.step()
+    assert machine.cpu.opcode == 0xEA
+    with pytest.raises(AttributeError):
+        machine.cpu.opcode = 0  # type: ignore[misc]

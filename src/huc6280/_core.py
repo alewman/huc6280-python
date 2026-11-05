@@ -85,6 +85,16 @@ class CoreMixin:
         """The current cycle's kind: ``"read"``, ``"write"``, ``"dummy"`` or ``"idle"``."""
         return self._kind
 
+    @property
+    def opcode(self) -> int:
+        """The opcode of the instruction being executed, read-only.
+
+        It is set once the fetch cycle's ``read_byte`` has returned, so every later callback of
+        the instruction (operand reads, the write of an ST0/ST1/ST2) sees it; the fetch callback
+        itself still sees the previous instruction's. An interrupt entry leaves it unchanged.
+        """
+        return self._opcode
+
     # -- the mapper -------------------------------------------------------
 
     def physical(self, address: int) -> int:
