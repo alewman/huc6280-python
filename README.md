@@ -17,7 +17,9 @@ by commit, never copied) as `65816-python` does. Passing, by rung
 ([docs/validation.md](docs/validation.md)):
 
 - 0: the opcode map against Hudson's software manual (234 opcodes);
-- 1: SingleStepTests `huc6280`, 640,000 of 640,000 cases (emulator tier, masks counted);
+- 1: SingleStepTests `huc6280`, 640,000 of 640,000 cases (emulator tier, masks counted; exact with
+  `decimal_formula = "mesen"`, the corpus's own decimal formula, and 1,552 decimal cases counted in the
+  default, Mednafen's: [issue 0004](docs/issues/0004-decimal-adc-sbc-mednafen-formulas.md));
 - 1b: the Rockwell 65C02 corpus, results only, 2,089,891 cases on 209 shared opcodes;
 - 3: directed tests for the hardware-verified and manufacturer-tier quirks;
 - 4: MAME 0.285 replay of six games, 21.0 million instructions, no register divergence.

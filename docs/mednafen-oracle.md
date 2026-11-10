@@ -73,13 +73,13 @@ These are rows for [undocumented-behavior.md](undocumented-behavior.md); each is
 | C7 `CSL`/`CSH` | 2 cycles at the old speed and the last cycle at the new one: the core's order, not MAME's | source, replay (no difference) |
 | C9 block reads of the hardware page | **`0` for `$0800-$17FF`** (`IORead`: `InBlockMove()` returns 0 for the PSG, timer, port and interrupt-register ranges, not for the VDC/VCE or CD): pcetech's rule and issue 0001's end of range. This corrects the entry's earlier "MAME and Mednafen read the device" | source |
 | C12 `TSB`/`TRB` Z | the stored result is zero (`(x \| A) ? 0 : Z`), N and V from the memory byte | source |
-| C13 decimal `ADC`/`SBC`, invalid digits | `SBC` (its own digit-wise formula) **agrees with the Rockwell 65C02 corpus in all 4,916 decimal cases** (4,139 with an invalid digit), where the core (Mesen's formula) differs in the invalid ones; `ADC` is **the other way round**: the core agrees with Rockwell in all, Mednafen's adds the adjust differently and differs from both in 375 of the 4,304 invalid cases. The two differ from each other in 9,216 of 131,072 input/carry combinations each, never with valid digits (checked by a transcription of the macros, not a run) | source + corpus |
+| C13 decimal `ADC`/`SBC`, invalid digits | ChangeLog 2015-04-29: "Corrected decimal-mode ADC and SBC behavior(especially for "illegal" input values), per tests on a HuC6280." Its formulas are **the core's default since 2026-11-10** (issue 0004; Mesen's stay as `decimal_formula = "mesen"`). `SBC` (its own digit-wise formula) agrees with the Rockwell 65C02 corpus in all 44,848 decimal cases, where Mesen's differs in 3,164; `ADC` is the other way round: Mesen's agrees with Rockwell in all, Mednafen's differs in 3,195. The two formulas differ in 9,216 of 131,072 input/carry combinations each (`ADC`'s carry in 324), never with valid digits (re-derived by running both) | source + corpus |
 | C14 block transfers push A, X, Y | **yes** (`LD_BMT`: `PUSH(Y); PUSH(A); PUSH(X)` ... `X = POP()...`): the core's A, X, Y match with no adoption in all 91 transfers | source, replay |
 | C15 interrupt after `CLI` | **not taken early**: the six games show 0 steps where the core's poll waits and Mednafen does not (`IFlagSample` is taken in `LastCycle`, before `CLI` changes I) | replay |
 | C16 `BRK` with T | pushes T = 0 (`P &= ~T_FLAG` before the pushes), like Mesen and the core, unlike the HDL | source |
 | C18 vanished interrupt | the timer is re-checked live (`IRQlow & IQTIMER & IRQMask`) and **dropped** if gone ("else tmpa stays 0"); IRQ1/IRQ2 use the sampled lines: Mesen2's split rule, the core's default | source |
 | U8 zero-page pointer wrap | not checked | |
 
-Nothing here changes a default: Mednafen sides with the core on C3, C5, C7, C9, C12, C14, C15, C16
-and C18, with MAME on C6, and its decimal `SBC` with the Rockwell chip rather than with the corpus
-the core follows (C13: recorded as a lead in [validation.md](validation.md), not a defect).
+One default changed on Mednafen's vote: C13 (issue 0004). Otherwise Mednafen sides with the core on C3, C5, C7, C9, C12, C14, C15, C16
+and C18, with MAME on C6, and its decimal `SBC` with the Rockwell chip rather than with the Mesen-generated corpus
+(C13: the core's default is now Mednafen's formulas, counted against the corpus in rung 1).
