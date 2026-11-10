@@ -180,6 +180,9 @@ def run_core(case: dict) -> list[Cycle]:
 
     cpu = HuC6280(read_byte, write_byte, idle)
     cpu.block_reads_hardware_page_as_zero = False
+    # The question here is what crosses the bus, against the corpus and the HDL, which agree on
+    # decimal results in the sample: Mesen's formula (the corpus's) keeps it about the bus (C13).
+    cpu.decimal_formula = "mesen"
     for name in ("a", "x", "y", "s", "p", "pc"):
         setattr(cpu, name, initial[name])
     cpu.mpr[:] = initial["mpr"]

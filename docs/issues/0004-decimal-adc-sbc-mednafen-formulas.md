@@ -120,6 +120,14 @@ Re-certification (2026-11-10):
   mode can show here. Rung 4b was not rerun (traces are 155 MB each and not present); the same
   six games run no invalid-digit decimal operation, so it cannot move either.
 
+- **Rung 5** (`tests/test_huc6280_vhdl.py`): the bus-bytes comparison runs the core with `"mesen"`
+  (the corpus's formula; the full run caught `ADC` with T set writing different bytes under the new
+  default), so it stays a test of what crosses the bus; decimal results are C13's question.
+- **Full pytest** (CPython 3.14 and PyPy 3.11, slow tests included): 2,048 passed, 1 skipped (the Mednafen
+  traces, absent), plus the three rung 5 cases above after that fix; ruff check and format clean.
+- **Board** (`pcengine-python`, not modified, not repinned; `PYTHONPATH` to this working tree): 236 passed,
+  1 skipped (PIL), 2 deselected. The Mednafen lockstep stops were not rerun.
+
 ## What is not claimed
 
 No capture of a HuC6280 doing an invalid-digit decimal operation exists here. The ChangeLog line is the
