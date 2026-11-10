@@ -36,6 +36,12 @@ not a judge (docs/validation.md); these readings are the build's, each counted:
   MAME, Mednafen and Mesen2's current source say the stored result is zero and the core
   follows them. Z alone is not compared for $04 $0C $14 $1C when it is the only difference
   (N, V and the stored byte always are). Counted as ``tsb_z``.
+- **C13, decimal ADC and SBC with an invalid BCD digit**: the corpus follows Mesen's digit adjust;
+  the core's default is Mednafen's (docs/issues/0004). A case whose only difference from the
+  corpus disappears under ``decimal_formula = "mesen"`` is passed and counted as
+  ``decimal_formula``; it is only ever a decimal ADC or SBC (checked here) and, the two formulas
+  being identical for valid digits, one with an invalid digit. Set ``FORMULA = "mesen"`` (or
+  ``run_single_step.py --formula mesen``) for the exact-match claim: no mask, 640,000/640,000.
 - **Dummy reads** are compared by address only (their value is whatever the
   flat RAM held); **internal cycles** have nothing to compare but their place.
 - **U7**: the zero-read rule for block transfers is the board's page; the
@@ -55,6 +61,11 @@ import sst_reader
 from huc6280 import HuC6280
 
 CORPUS = sst_reader.CORPUS
+#: The decimal formula the cases run with; None is the core's default (then C13 is a counted mask).
+FORMULA: str | None = None
+DECIMAL_ARITHMETIC = {0x61, 0x65, 0x69, 0x6D, 0x71, 0x72, 0x75, 0x79, 0x7D} | {
+    0xE1, 0xE5, 0xE9, 0xED, 0xF1, 0xF2, 0xF5, 0xF9, 0xFD
+}  # fmt: skip
 FETCH_HINT = "SingleStepTests huc6280 not fetched: python -I scripts/fetch_references.py"
 ST_OPCODES = {0x03, 0x13, 0x23}
 TSB_TRB = {0x04, 0x0C, 0x14, 0x1C}
@@ -73,6 +84,17 @@ def load_cases(opcode: int) -> Iterator[dict]:
 
 def run_case(case: dict) -> tuple[list[str], Counter]:
     """Run one case; return the differences (empty: it passes) and the masks it used."""
+    problems, masks = _run_case(case, FORMULA)
+    if problems and FORMULA is None and HuC6280.decimal_formula != "mesen":
+        # C13: the corpus is Mesen's. A case Mesen's formula fixes, and only that, is counted.
+        decimal = case["opcode"] in DECIMAL_ARITHMETIC and case["initial"]["p"] & 0x08
+        if decimal and not _run_case(case, "mesen")[0]:
+            masks["decimal_formula"] += 1
+            return [], masks
+    return problems, masks
+
+
+def _run_case(case: dict, formula: str | None) -> tuple[list[str], Counter]:
     opcode = case["opcode"]
     initial = case["initial"]
     memory = dict(initial["ram"])
@@ -112,6 +134,8 @@ def run_case(case: dict) -> tuple[list[str], Counter]:
 
     cpu = HuC6280(read_byte, write_byte, idle)
     cpu.block_reads_hardware_page_as_zero = False  # no hardware page in the corpus
+    if formula:
+        cpu.decimal_formula = formula
     for name in REGISTERS:
         setattr(cpu, name, initial[name])
     cpu.mpr[:] = initial["mpr"]

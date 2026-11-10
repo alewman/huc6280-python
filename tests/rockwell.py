@@ -21,6 +21,8 @@ HuC6280's mapper (docs/validation.md, "Rung 1b"):
 - Documented differences between the chips that change a result, masked and counted:
   ``BIT #imm`` sets N and V on the HuC6280 (U19), ``TSB``/``TRB`` take Z from the stored result
   (C12), and decimal ``ADC``/``SBC`` leave V alone (U14).
+- C13: the chip's decimal SBC with an invalid digit is Mednafen's formula, its ADC Mesen's: the
+  cases that only the other formula passes are counted (``decimal_formula``).
 
 Every exclusion and mask is counted by name in the returned Counter.
 """
@@ -117,7 +119,24 @@ def physical(address: int) -> int:
 
 
 def run_case(case: dict) -> tuple[list[str], Counter]:
-    """Run one case; return the differences (empty: it passes) and the masks it used."""
+    """Run one case; return the differences (empty: it passes) and the masks it used.
+
+    C13: the Rockwell chip's decimal SBC is Mednafen's formula and its ADC is Mesen's. A decimal
+    case that differs only under the core's formula and passes under the other one is passed and
+    counted as ``decimal_formula`` (with valid digits the two are identical, so it has an invalid
+    digit). Under the default formula that is ADC, under ``"mesen"`` SBC.
+    """
+    problems, masks = _run_case(case, None)
+    opcode = int(case["name"].split()[0], 16)
+    if problems and opcode in DECIMAL_OPS and case["initial"]["p"] & 0x08:
+        other = "mesen" if HuC6280.decimal_formula == "mednafen" else "mednafen"
+        if not _run_case(case, other)[0]:
+            masks["decimal_formula"] += 1
+            return [], masks
+    return problems, masks
+
+
+def _run_case(case: dict, formula: str | None) -> tuple[list[str], Counter]:
     initial, final = case["initial"], case["final"]
     opcode = case["name"].split()[0]
     opcode = int(opcode, 16)
@@ -146,6 +165,8 @@ def run_case(case: dict) -> tuple[list[str], Counter]:
         memory[address] = value
 
     cpu = HuC6280(read_byte, write_byte, lambda address: None)
+    if formula:
+        cpu.decimal_formula = formula
     cpu.mpr[:] = BANK
     for name in ("a", "x", "y", "s", "pc"):
         setattr(cpu, name, initial[name])
@@ -153,17 +174,7 @@ def run_case(case: dict) -> tuple[list[str], Counter]:
     cpu.step()
 
     problems: list[str] = []
-    # SBC's operand is its last read.
-    invalid_bcd = (
-        opcode in DECIMAL_SBC
-        and initial["p"] & 0x08
-        and not all((v & 0xF) < 10 and (v >> 4) < 10 for v in (initial["a"], values[-1]))
-    )
-    if invalid_bcd:
-        masks["sbc_decimal_invalid_digits"] += 1  # C13: A, N, Z, C not compared
     for name in ("a", "x", "y", "s", "pc"):
-        if name == "a" and invalid_bcd:
-            continue
         if getattr(cpu, name) != final[name]:
             problems.append(f"{name}: got ${getattr(cpu, name):X}, want ${final[name]:X}")
     mask = 0x30  # T and B
@@ -176,8 +187,6 @@ def run_case(case: dict) -> tuple[list[str], Counter]:
     if opcode in DECIMAL_OPS and initial["p"] & 0x08:
         mask |= 0x40
         masks["decimal_v"] += 1
-    if invalid_bcd:
-        mask |= 0x8B  # N, Z, C (and V, which decimal leaves alone)
     if (cpu.p ^ final["p"]) & ~mask:
         problems.append(f"p: got ${cpu.p:02X}, want ${final['p']:02X} (mask ${mask:02X})")
     for address, value in final["ram"]:

@@ -442,6 +442,82 @@ def test_u14_decimal_sbc() -> None:
     assert machine.cpu.a == 0x23 and machine.cpu.p & C
 
 
+# -- C13: the decimal digit adjust with an invalid BCD digit (docs/issues/0004) ---------------
+# Emulator tier (the author's statement of a hardware test, Mednafen ChangeLog 2015-04-29, and
+# Mesen's code); no manual says. The default is Mednafen's, "mesen" the named alternative.
+
+
+def _decimal(opcode: int, a: int, operand: int, carry: int, formula: str | None) -> Host:
+    machine = host(bytes([0xF8, opcode, operand]), a=a, p=I | carry)  # SED; ADC/SBC #operand
+    if formula:
+        machine.cpu.decimal_formula = formula
+    machine.step(2)
+    return machine
+
+
+def test_c13_default_formula_is_mednafens() -> None:
+    assert HuC6280.decimal_formula == "mednafen"
+
+
+@pytest.mark.parametrize(
+    ("opcode", "a", "operand", "carry", "formula", "result", "carry_out"),
+    [
+        (0xE9, 0x00, 0x0A, 0, "mednafen", 0x8F, 0),  # SBC $00 - $0A, borrow in
+        (0xE9, 0x00, 0x0A, 0, None, 0x8F, 0),
+        (0xE9, 0x00, 0x0A, 0, "mesen", 0x9F, 0),  # Mesen's is $10 higher
+        (0x69, 0x0A, 0x0F, 1, "mednafen", 0x20, 0),  # ADC $0A + $0F + 1
+        (0x69, 0x0A, 0x0F, 1, "mesen", 0x10, 0),
+        (0x69, 0x0A, 0x8F, 1, "mednafen", 0x00, 1),  # the formulas differ in C here
+        (0x69, 0x0A, 0x8F, 1, "mesen", 0x90, 0),
+        (0x69, 0x19, 0x28, 0, "mednafen", 0x47, 0),  # valid digits: the same in both
+        (0x69, 0x19, 0x28, 0, "mesen", 0x47, 0),
+        (0xE9, 0x42, 0x19, 1, "mednafen", 0x23, 1),
+        (0xE9, 0x42, 0x19, 1, "mesen", 0x23, 1),
+        (0x69, 0x99, 0x01, 0, "mednafen", 0x00, 1),
+        (0x69, 0x99, 0x01, 0, "mesen", 0x00, 1),
+    ],
+)
+def test_c13_decimal_results(
+    opcode: int, a: int, operand: int, carry: int, formula: str | None, result: int, carry_out: int
+) -> None:
+    machine = _decimal(opcode, a, operand, carry, formula)
+    assert machine.cpu.a == result
+    assert machine.cpu.p & C == carry_out
+    assert bool(machine.cpu.p & Z) == (result == 0) and bool(machine.cpu.p & N) == bool(
+        result & 0x80
+    )
+
+
+@pytest.mark.parametrize("formula", ["mednafen", "mesen"])
+def test_c13_v_is_left_alone_and_the_extra_cycle_stays_in_both_formulas(formula: str) -> None:
+    for opcode in (0x69, 0xE9):
+        machine = host(bytes([0xF8, opcode, 0x0A]), a=0x00, p=I | V)
+        machine.cpu.decimal_formula = formula
+        machine.step()
+        assert machine.step() == 3
+        assert machine.cpu.p & V
+
+
+@pytest.mark.parametrize(("formula", "result"), [("mednafen", 0x20), ("mesen", 0x10)])
+def test_c13_adc_with_t_set_writes_the_formula_result_to_memory_at_x(
+    formula: str, result: int
+) -> None:
+    machine = host(bytes([0xF8, 0xF4, 0x69, 0x0F]), x=5, a=0x77, p=I | C)  # SED; SET; ADC #$0F
+    machine.memory[RAM + 5] = 0x0A
+    machine.cpu.decimal_formula = formula
+    machine.step(3)
+    assert machine.memory[RAM + 5] == result
+    assert machine.cpu.a == 0x77  # A is untouched
+
+
+def test_c13_an_unknown_formula_is_refused() -> None:
+    machine = host(bytes([0xF8, 0x69, 0x01]))
+    machine.cpu.decimal_formula = "bogus"
+    machine.step()
+    with pytest.raises(ValueError, match="decimal_formula"):
+        machine.step()
+
+
 # -- U15: BRK (HW HB-4, HB-17; SW; pcetech) --------------------------------------------------
 
 

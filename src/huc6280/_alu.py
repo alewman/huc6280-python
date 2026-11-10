@@ -7,18 +7,31 @@ more cycles (read, internal, write). ``SBC`` does not (C5: SW's entry has no T
 clause; MAME's yes is a guess), unless ``sbc_honours_t`` is set.
 
 Decimal mode (U14, HW HB-4, SW ``ADC``): one more cycle, N, Z and C taken from
-the decimal result, **V left alone**. The digit adjust below is Mesen's
-(``PceCpu::ADD``/``SUB``, emulator tier), checked against the 640,000-case
-corpus at rung 1: neither manual says how invalid digits adjust.
+the decimal result, **V left alone**. How invalid digits adjust is C13: neither manual says.
+``decimal_formula`` picks the digit adjust. The default is Mednafen's (``"mednafen"``, from the
+``ADC``/``SBC`` macros of ``huc6280.cpp``, "corrected ... per tests on a HuC6280", ChangeLog
+2015-04-29: the one author statement of hardware testing); ``"mesen"`` is Mesen's
+(``PceCpu::ADD``/``SUB``), the formula the 640,000-case SingleStepTests corpus was made with.
+They differ only with an invalid BCD digit (docs/issues/0004).
 """
 
 from huc6280._core import ZERO_PAGE, C, D, N, V, Z, nz
 
+FORMULAS = ("mednafen", "mesen")
 
-def add(a: int, operand: int, p: int) -> tuple[int, int]:
-    """A + operand + C, binary or decimal; return (result, P)."""
-    carry = p & C
-    if p & D:
+
+def _decimal_add(a: int, operand: int, carry: int, formula: str) -> int:
+    """The decimal sum before masking: bit 8 and up is the carry out."""
+    if formula == "mednafen":
+        # huc6280.cpp ADC: tmp = low digits + carry, +6 from $0A up, then the high digits, +$60 from $A0 up.
+        tmp = (a & 0x0F) + (operand & 0x0F) + carry
+        if tmp >= 0x0A:
+            tmp += 0x06
+        tmp += (a & 0xF0) + (operand & 0xF0)
+        if tmp >= 0xA0:
+            tmp += 0x60
+        return tmp
+    if formula == "mesen":
         # U14: low digit adjusted (+6 past 9) before its carry enters the high digit.
         low = (a & 0x0F) + (operand & 0x0F) + carry
         if low > 0x09:
@@ -26,6 +39,40 @@ def add(a: int, operand: int, p: int) -> tuple[int, int]:
         result = (a & 0xF0) + (operand & 0xF0) + (0x10 if low > 0x0F else 0) + (low & 0x0F)
         if result > 0x9F:
             result += 0x60
+        return result
+    raise ValueError(f"unknown decimal_formula {formula!r}")
+
+
+def _decimal_subtract(a: int, operand: int, carry: int, formula: str) -> int:
+    """The decimal difference: bit 8 set means no borrow (carry out)."""
+    if formula == "mednafen":
+        # huc6280.cpp SBC: digit-wise differences, each digit's borrow adjusts by 6 and $60.
+        m = ((a & 0x0F) - (operand & 0x0F) - (carry ^ 1)) & 0xFF
+        n = ((a >> 4) - (operand >> 4) - ((m >> 4) & 1)) & 0xFF
+        result = ((n << 4) | (m & 0x0F)) & 0xFF
+        if m & 0x10:
+            result = (result - 0x06) & 0xFF
+        if n & 0x10:
+            result = (result - 0x60) & 0xFF
+        return result | (0x100 if not n & 0x10 else 0)
+    if formula == "mesen":
+        # Mesen's SUB; the adjust subtracts 6 and $60 where no carry came out.
+        inverted = ~operand & 0xFF
+        low = (a & 0x0F) + (inverted & 0x0F) + carry
+        if low <= 0x0F:
+            low -= 0x06
+        result = (a & 0xF0) + (inverted & 0xF0) + (0x10 if low > 0x0F else 0) + (low & 0x0F)
+        if result <= 0xFF:
+            result -= 0x60
+        return result
+    raise ValueError(f"unknown decimal_formula {formula!r}")
+
+
+def add(a: int, operand: int, p: int, formula: str = "mednafen") -> tuple[int, int]:
+    """A + operand + C, binary or decimal; return (result, P)."""
+    carry = p & C
+    if p & D:
+        result = _decimal_add(a, operand, carry, formula)
         p &= ~(N | Z | C)  # V is unchanged in decimal mode (U14)
     else:
         result = a + operand + carry
@@ -37,20 +84,14 @@ def add(a: int, operand: int, p: int) -> tuple[int, int]:
     return result & 0xFF, p | nz(result)
 
 
-def subtract(a: int, operand: int, p: int) -> tuple[int, int]:
+def subtract(a: int, operand: int, p: int, formula: str = "mednafen") -> tuple[int, int]:
     """A - operand - (1 - C), binary or decimal; return (result, P)."""
     carry = p & C
-    inverted = ~operand & 0xFF
     if p & D:
-        # U14: Mesen's SUB; the adjust subtracts 6 and $60 where no carry came out.
-        low = (a & 0x0F) + (inverted & 0x0F) + carry
-        if low <= 0x0F:
-            low -= 0x06
-        result = (a & 0xF0) + (inverted & 0xF0) + (0x10 if low > 0x0F else 0) + (low & 0x0F)
-        if result <= 0xFF:
-            result -= 0x60
+        result = _decimal_subtract(a, operand, carry, formula)
         p &= ~(N | Z | C)
     else:
+        inverted = ~operand & 0xFF
         result = a + inverted + carry
         p &= ~(N | V | Z | C)
         if ~(a ^ inverted) & (a ^ result) & 0x80:
@@ -65,6 +106,9 @@ class ALUMixin:
 
     #: C5: whether SBC honours T like ADC (False: SW and pcetech list only ORA AND EOR ADC).
     sbc_honours_t = False
+
+    #: C13: the decimal digit adjust of ADC and SBC, ``"mednafen"`` (default) or ``"mesen"``.
+    decimal_formula = "mednafen"
 
     def _memory_mode(self, operand: int, operation, extra_cycle: bool = False) -> None:
         """U4: T set, so the operation's other operand is M($2000 + X) and the result goes back.
@@ -111,7 +155,7 @@ class ALUMixin:
         if uses_t and self._t:
 
             def combine(memory: int, value: int) -> int:
-                result, self.p = operation(memory, value, self.p)
+                result, self.p = operation(memory, value, self.p, self.decimal_formula)
                 return result
 
             # The adjust's extra cycle (U14) sits among the memory-mode cycles.
@@ -121,7 +165,7 @@ class ALUMixin:
             # U14: the extra cycle. A dummy read at the next opcode, or an internal cycle for
             # SBC while T is set (it does not use the memory mode but keeps its cycle; Mesen).
             self._io() if self._t else self._dummy(self.pc)
-        self.a, self.p = operation(self.a, operand, self.p)
+        self.a, self.p = operation(self.a, operand, self.p, self.decimal_formula)
 
     def _op_adc(self, mode) -> None:
         """ADC -- A + M + C -> A, or M(X) + M + C -> M(X) with T set (SW SB-17)."""

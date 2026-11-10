@@ -40,15 +40,22 @@ def run_opcode(opcode: int) -> tuple[int, int, int, Counter, list[str]]:
     return opcode, passed, failed, masks, first
 
 
-def init(limit: int | None) -> None:
+def init(limit: int | None, formula: str | None) -> None:
     global LIMIT
     LIMIT = limit
+    if formula:
+        rockwell.HuC6280.decimal_formula = formula
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--jobs", type=int, default=24)
     parser.add_argument("--limit", type=int)
+    parser.add_argument(
+        "--formula",
+        choices=("mednafen", "mesen"),
+        help="decimal_formula (default: the core's); C13's disputed op is the other one's, counted",
+    )
     parser.add_argument("--json", type=Path)
     parser.add_argument("--opcode", type=lambda text: int(text, 16), action="append")
     args = parser.parse_args()
@@ -56,7 +63,9 @@ def main() -> int:
     passed = failed = 0
     masks: Counter = Counter()
     results = {}
-    with multiprocessing.Pool(args.jobs, initializer=init, initargs=(args.limit,)) as pool:
+    with multiprocessing.Pool(
+        args.jobs, initializer=init, initargs=(args.limit, args.formula)
+    ) as pool:
         for opcode, ok, bad, used, first in pool.imap_unordered(run_opcode, opcodes):
             passed += ok
             failed += bad
