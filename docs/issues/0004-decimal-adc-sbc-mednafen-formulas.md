@@ -1,7 +1,7 @@
 # 0004: decimal `ADC` and `SBC` with an invalid BCD digit: the default becomes Mednafen's formulas
 
 Raised 2026-11-10 (Aubrey's decision, from a second reviewer's finding on C13).
-Status: **done 2026-11-10, local commits, not released.** The default is `decimal_formula = "mednafen"`; Mesen's formulas stay as `"mesen"`. Results for valid digits, binary mode, V, cycles and the T flag do not change.
+Status: **done 2026-11-10, released in 0.3.0.** The default is `decimal_formula = "mednafen"`; Mesen's formulas stay as `"mesen"`. Results for valid digits, binary mode, V, cycles and the T flag do not change.
 
 ## What
 

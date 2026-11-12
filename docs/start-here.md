@@ -222,7 +222,7 @@ buffer and the ports. The reasoning (chip-extraction rule, RP2A03 precedent,
 the alternative of an `onchip` helper in the core) is in the
 [decisions](handoff-brief.md#the-core-boundary).
 
-## The embedding contract (proposed; the build session may refine)
+## The embedding contract
 
 ```python
 cpu = HuC6280(read_byte, write_byte, idle)

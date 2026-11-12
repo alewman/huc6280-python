@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "huc6280-python"
-version = "0.2.0"
+version = "0.3.0"
 description = "Readable, pure-Python Hudson HuC6280 core, cycle by cycle, for the PC Engine, TurboGrafx-16 and SuperGrafx"
 readme = "README.md"
 # The floor is the newest Python PyPy supports (3.11 as of PyPy 7.3.23); raise it when PyPy does.
@@ -27,6 +27,11 @@ classifiers = [
 dependencies = [
     "6502-python @ git+https://github.com/alewman/6502-python@2146eba3b3da4d2cc6c8fa3994f100bcb5abf039",
 ]
+
+[project.urls]
+Homepage = "https://github.com/alewman/huc6280-python"
+Repository = "https://github.com/alewman/huc6280-python"
+Changelog = "https://github.com/alewman/huc6280-python/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff==0.16.8"]

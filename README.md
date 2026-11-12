@@ -9,7 +9,8 @@ timer, interrupt registers and PSG, is a decision in
 [docs/handoff-brief.md](docs/handoff-brief.md)); the console is the board,
 `pcengine-python`.
 
-**Status (2026-10-24): the core is built.** `HuC6280(CPUFrame)`: every
+**Status (2026-11-12, release 0.3.0): the core is built** (2026-10-24) and is the CPU of
+`pcengine-python`, `supergrafx-python` and `pcenginecd-python`. `HuC6280(CPUFrame)`: every
 cycle one bus callback (`read_byte`, `write_byte`, `idle(address | None)`), the 21-bit
 mapper in the core, interrupt lines on the frame's `IRQ_LINE`, one `step()` per block
 transfer. It subclasses [6502-python](https://github.com/alewman/6502-python)'s frame (pinned
@@ -21,8 +22,11 @@ by commit, never copied) as `65816-python` does. Passing, by rung
   `decimal_formula = "mesen"`, the corpus's own decimal formula, and 1,552 decimal cases counted in the
   default, Mednafen's: [issue 0004](docs/issues/0004-decimal-adc-sbc-mednafen-formulas.md));
 - 1b: the Rockwell 65C02 corpus, results only, 2,089,891 cases on 209 shared opcodes;
+- 2: Dormann's 65C02 extended opcodes test, relocated, to its success trap;
 - 3: directed tests for the hardware-verified and manufacturer-tier quirks;
-- 4: MAME 0.285 replay of six games, 21.0 million instructions, no register divergence.
+- 4: MAME 0.285 replay of six games, 21.0 million instructions, no register divergence;
+- 4b: the same six games against Mednafen 1.32.1, 20.4 million instructions, no divergence;
+- 5: srg320's VHDL core under GHDL, 627,484 cases, as a third opinion on the bus.
 
 **There is no hardware-captured per-instruction data and no die-level model of this
 chip**; the volume judges are emulator tier (detectors). Nothing here was run on a real
@@ -78,7 +82,16 @@ Run anything that reads `reference/` with `python -I`. Traces go in
 
 ## Documents
 
-[docs/README.md](docs/README.md) is the index; [docs/handoff-brief.md](docs/handoff-brief.md)
-ends with the open decisions for the owner.
+[docs/README.md](docs/README.md) is the index; [CHANGELOG.md](CHANGELOG.md) lists the releases;
+[docs/handoff-brief.md](docs/handoff-brief.md) is the brief the core was built from, with the
+decisions taken and what was built at its end.
+
+## Install
+
+```sh
+pip install "huc6280-python @ git+https://github.com/alewman/huc6280-python@v0.3.0"
+```
+
+Not on PyPI: the core depends on 6502-python by git commit. Python 3.11 or newer, CPython or PyPy.
 
 MIT licensed ([LICENSE](LICENSE)).

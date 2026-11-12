@@ -4,9 +4,9 @@ Read in this order.
 
 | Document | What it holds |
 | --- | --- |
-| [start-here.md](start-here.md) | The HuC6280 as a core author needs it: registers and the T flag; the 21-bit MMU and why zero page is at `$2000`; the hardware page; vectors, priority, interrupt entry; the clock and `CSL`/`CSH`; the Hudson instructions; block transfers; what the core owns; the proposed embedding contract |
+| [start-here.md](start-here.md) | The HuC6280 as a core author needs it: registers and the T flag; the 21-bit MMU and why zero page is at `$2000`; the hardware page; vectors, priority, interrupt entry; the clock and `CSL`/`CSH`; the Hudson instructions; block transfers; what the core owns; the embedding contract |
 | [timing.md](timing.md) | The measured agreement (Hudson's manual vs the emulators, 17 + 6n in 12,500 cases); the opcode and base-cycle grids; the bus shape of every addressing mode; the 65C02 comparison; interrupt, reset and speed; the 26 opcodes where four emulators differ |
-| [undocumented-behavior.md](undocumented-behavior.md) | U1-U22 quirks and C1-C11 contradictions, each with its tier |
+| [undocumented-behavior.md](undocumented-behavior.md) | U1-U25 quirks and C1-C18 contradictions, each with its tier |
 | [validation.md](validation.md) | Every oracle by tier with pins, what does not exist, the rung plan, what no judge decides, the minimal harness |
 | [mednafen-oracle.md](mednafen-oracle.md) | The patched, built Mednafen 1.32.1 as a second emulator referee: recipe, traps, six-game replay and its votes on the C-entries |
 | [mame-oracle.md](mame-oracle.md) | The verified MAME 0.285 recipe, the working read tap (watchpoints do not), `tg16` for US games, the screen-capture workaround, what MAME does |
@@ -38,3 +38,7 @@ Build findings (2026-10-24) are in [undocumented-behavior.md](undocumented-behav
    real hardware are the only hardware-captured material, and they need a VDC.
 7. **The MiSTer timing captures look like SignalTap of the FPGA core**, not a
    console: provenance is unstated, so they are emulator tier.
+
+[issues/](issues/) holds the four issues the board raised on the core (0001-0004), each with its
+evidence and outcome. Paths under `/data/emu/` and `~/.local/opt/` in these documents are the
+author's machine: read them as "your checkout" and "your ROM directory".

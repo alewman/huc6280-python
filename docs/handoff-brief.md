@@ -1,5 +1,10 @@
 # Handoff: build `huc6280-python`, the PC Engine's CPU core
 
+> **A historical document.** This is the brief the core was built from (2026-10-23), kept as
+> written, with the decisions and the build's outcome appended at the end. The core is built and
+> released; for what it is now read the [README](../README.md) and [validation.md](validation.md).
+> Paths under `/data/emu/` are the author's machine.
+
 ## Context you are inheriting
 
 The family's shape is **chips are cores, boards compose cores**. Each core is
@@ -264,7 +269,8 @@ harness. Use 6502-python's tooling hooks (PR #9), not parallel modules.
 
 ## Decided by the user
 
-Nothing yet: this Phase 0 is new. The section below lists what it needs.
+Nothing when this brief was written; every decision was taken on 2026-10-23 and is recorded in
+"Decided by the user (Aubrey, 2026-10-23)" below.
 
 ## Open decisions for Aubrey
 
@@ -348,4 +354,4 @@ The build session followed the brief; where it refined it:
 - **Debugger.** Breakpoints on the logical PC and `add_physical_breakpoint`; watchpoints and tracked accesses physical (kinds `r`, `w`, `d`, `i`).
 - **Rungs.** 0, 1, 1b, 2, 3, 4 and 5 are done (docs/validation.md). Rung 6 is the board's.
 
-Still open for Aubrey (none blocks the board): decision 7 (building Mednafen as a second referee) was not done; decision 8 (public after rung 1) is waiting, the repository is local; the 16 block-transfer cases whose final A, X, Y or RAM the data flow does not reproduce (validation.md, rung 1), and C12-C17 are recorded as undecidable here.
+Since then: decision 7 is done (Mednafen 1.32.1 built as a second referee, rung 4b) and decision 8 is done (the repository is public on GitHub since 2026-10-24). C13 is settled by issue 0004 (the decimal default is Mednafen's). Still undecidable here: the 16 block-transfer cases whose final A, X, Y or RAM the data flow does not reproduce (validation.md, rung 1), and C12 and C14-C18.
