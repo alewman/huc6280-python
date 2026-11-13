@@ -8,11 +8,12 @@ clause; MAME's yes is a guess), unless ``sbc_honours_t`` is set.
 
 Decimal mode (U14, HW HB-4, SW ``ADC``): one more cycle, N, Z and C taken from
 the decimal result, **V left alone**. How invalid digits adjust is C13: neither manual says.
-``decimal_formula`` picks the digit adjust. The default is Mednafen's (``"mednafen"``, from the
-``ADC``/``SBC`` macros of ``huc6280.cpp``, "corrected ... per tests on a HuC6280", ChangeLog
-2015-04-29: the one author statement of hardware testing); ``"mesen"`` is Mesen's
-(``PceCpu::ADD``/``SUB``), the formula the 640,000-case SingleStepTests corpus was made with.
-They differ only with an invalid BCD digit (docs/issues/0004).
+``decimal_formula`` picks the digit adjust. The default, ``"mednafen"``, gives the results
+Mednafen's HuC6280 gives ("corrected ... per tests on a HuC6280", its ChangeLog, 2015-04-29: the
+one author statement of hardware testing); ``"mesen"`` gives Mesen's, the results the
+640,000-case SingleStepTests corpus was made with. They differ only with an invalid BCD digit
+(docs/issues/0004). Both are implemented here from the rules stated in words there and checked
+against recorded result tables (tests/test_mednafen.py); neither emulator's code is copied.
 """
 
 from huc6280._core import ZERO_PAGE, C, D, N, V, Z, nz
@@ -21,50 +22,52 @@ FORMULAS = ("mednafen", "mesen")
 
 
 def _decimal_add(a: int, operand: int, carry: int, formula: str) -> int:
-    """The decimal sum before masking: bit 8 and up is the carry out."""
+    """The decimal sum before masking: 256 and up is the carry out.
+
+    Written from the rule each emulator's result table follows (docs/issues/0004 states both
+    in words), digit by digit; no emulator's source is reproduced here.
+    """
+    ones = a % 16 + operand % 16 + carry
+    sixteens = a // 16 + operand // 16
+    if ones >= 10:
+        ones += 6  # a digit past 9 skips the six unused codes
     if formula == "mednafen":
-        # huc6280.cpp ADC: tmp = low digits + carry, +6 from $0A up, then the high digits, +$60 from $A0 up.
-        tmp = (a & 0x0F) + (operand & 0x0F) + carry
-        if tmp >= 0x0A:
-            tmp += 0x06
-        tmp += (a & 0xF0) + (operand & 0xF0)
-        if tmp >= 0xA0:
-            tmp += 0x60
-        return tmp
-    if formula == "mesen":
-        # U14: low digit adjusted (+6 past 9) before its carry enters the high digit.
-        low = (a & 0x0F) + (operand & 0x0F) + carry
-        if low > 0x09:
-            low += 0x06
-        result = (a & 0xF0) + (operand & 0xF0) + (0x10 if low > 0x0F else 0) + (low & 0x0F)
-        if result > 0x9F:
-            result += 0x60
-        return result
-    raise ValueError(f"unknown decimal_formula {formula!r}")
+        # Everything the ones digit overflowed by is carried, however much that is.
+        total = 16 * sixteens + ones
+    elif formula == "mesen":
+        # One carry at most, and only the low four bits of the ones digit are kept.
+        total = 16 * (sixteens + (1 if ones >= 16 else 0)) + ones % 16
+    else:
+        raise ValueError(f"unknown decimal_formula {formula!r}")
+    if total >= 0xA0:
+        total += 0x60
+    return total
 
 
 def _decimal_subtract(a: int, operand: int, carry: int, formula: str) -> int:
-    """The decimal difference: bit 8 set means no borrow (carry out)."""
+    """The decimal difference: 256 and up means no borrow (carry out). Written as above."""
     if formula == "mednafen":
-        # huc6280.cpp SBC: digit-wise differences, each digit's borrow adjusts by 6 and $60.
-        m = ((a & 0x0F) - (operand & 0x0F) - (carry ^ 1)) & 0xFF
-        n = ((a >> 4) - (operand >> 4) - ((m >> 4) & 1)) & 0xFF
-        result = ((n << 4) | (m & 0x0F)) & 0xFF
-        if m & 0x10:
-            result = (result - 0x06) & 0xFF
-        if n & 0x10:
-            result = (result - 0x60) & 0xFF
-        return result | (0x100 if not n & 0x10 else 0)
+        # Digit differences with a borrow between them; each digit that borrowed is corrected
+        # (by 6, by $60) on the assembled byte, modulo 256.
+        ones = a % 16 - operand % 16 - (1 - carry)
+        sixteens = a // 16 - operand // 16 - (1 if ones < 0 else 0)
+        byte = 16 * (sixteens % 16) + ones % 16
+        if ones < 0:
+            byte -= 0x06
+        if sixteens < 0:
+            byte -= 0x60
+        return byte % 256 + (0 if sixteens < 0 else 256)
     if formula == "mesen":
-        # Mesen's SUB; the adjust subtracts 6 and $60 where no carry came out.
-        inverted = ~operand & 0xFF
-        low = (a & 0x0F) + (inverted & 0x0F) + carry
-        if low <= 0x0F:
-            low -= 0x06
-        result = (a & 0xF0) + (inverted & 0xF0) + (0x10 if low > 0x0F else 0) + (low & 0x0F)
-        if result <= 0xFF:
-            result -= 0x60
-        return result
+        # The sum with the operand's complement; a digit that produced no carry is corrected
+        # before the next is formed, and the correction is not reduced modulo 256 here.
+        complement = 255 - operand
+        ones = a % 16 + complement % 16 + carry
+        if ones < 16:
+            ones -= 6
+        total = 16 * (a // 16 + complement // 16 + (1 if ones >= 16 else 0)) + ones % 16
+        if total < 256:
+            total -= 0x60
+        return total
     raise ValueError(f"unknown decimal_formula {formula!r}")
 
 

@@ -1,3 +1,8 @@
+This patch modifies Mednafen 1.32.1 and quotes lines of it as context. Mednafen is licensed
+GPL-2.0-or-later, and so is this patch file: it is not part of the MIT-licensed huc6280 package
+(nothing under src/ uses it), only a tool to build a traced Mednafen for scripts/mednafen_trace.py.
+SPDX-License-Identifier: GPL-2.0-or-later
+
 --- a/src/pce/huc6280.cpp
 +++ b/src/pce/huc6280.cpp
 @@ -31,6 +31,8 @@

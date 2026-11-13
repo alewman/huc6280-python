@@ -11,6 +11,11 @@ The package is not on PyPI (it depends on 6502-python by git commit).
   `decimal_formula = "mesen"` restores the previous results. Valid digits, binary mode, V, cycles
   and the T flag are unchanged ([issue 0004](docs/issues/0004-decimal-adc-sbc-mednafen-formulas.md)).
 - Rung 5's bus comparison runs the core with the corpus's own decimal formula.
+- **Provenance:** the decimal routines of the first version of this change (commits d575521 to
+  9c47c98, never tagged) were transcriptions of Mednafen's (GPL-2.0) and Mesen2's (GPL-3.0) code.
+  They are rewritten from a description in words, the test keeps only digests of the result
+  tables, and the quoted code is gone from the issue; the results are bit-identical.
+- `tools/mednafen-trace.patch` is marked GPL-2.0-or-later (it is a patch to Mednafen).
 
 ## 0.2.0 (2026-11-07)
 

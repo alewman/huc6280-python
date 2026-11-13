@@ -19,36 +19,29 @@ Mednafen 1.32.1, `ChangeLog` line 2239 (April 29, 2015):
 An author's statement that a console was tested, with no artefact to re-run: the **hardware-verified**
 tier (validation.md), the same as pcetech, and above the SingleStepTests corpus, which is
 emulator-derived (it records what Mesen does). The statement says no more than that, and the code
-below is the only place the result is written down; it is a vote with a reason, not a capture.
+described below is the only place the result is written down; it is a vote with a reason, not a capture.
 
-The code (`src/pce/huc6280.cpp`, macros `ADC` and `SBC`, read from the pinned source):
+What that code does (`src/pce/huc6280.cpp`, macros `ADC` and `SBC`, read from the pinned source and
+stated here in words; Mednafen is GPL-2.0 and its code is not reproduced in this repository):
 
-```c
-tmp = (A & 0x0F) + (x & 0x0F) + (P & 1);
-if(tmp >= 0x0A)  tmp += 0x06;
-tmp += (A & 0xF0) + (x & 0xF0);
-if(tmp >= 0xA0)  tmp += 0x60;
-P &= ~(Z_FLAG | N_FLAG | C_FLAG);
-if(tmp & 0xFF00)  P |= C_FLAG;
-A = tmp;  X_ZNT(A);  LastCycle();                       // the extra cycle
+- **`ADC`**: add the two ones digits and the carry; if that is 10 or more, add 6. Add sixteen times
+  the sum of the two high digits (so everything the ones digit overflowed by is carried, however
+  much). If the total is `$A0` or more, add `$60`. Carry out is set when the total passes `$FF`.
+- **`SBC`**: subtract the operand's ones digit and the borrow from A's ones digit, then the
+  operand's high digit and the first difference's borrow from A's high digit. Assemble the byte
+  from the two differences' low four bits, then subtract 6 if the ones digit borrowed and `$60` if
+  the high digit borrowed, modulo 256. Carry out is set when the high digit did not borrow.
 
-const uint8 m = (A & 0xF) - (x & 0xF) - ((P & 1) ^ 1);
-const uint8 n = (A >> 4) - (x >> 4) - ((m >> 4) & 1);
-uint8 res = (n << 4) | (m & 0xF);
-P &= ~(Z_FLAG | N_FLAG | C_FLAG);
-if(m & 0x10)  res -= 0x06;
-if(n & 0x10)  res -= 0x60;
-A = res;  P |= ((n >> 4) & 0x1) ^ 1;  X_ZNT(A);  LastCycle();
-```
+In both, N and Z come from the result, V is left alone, and the instruction takes its extra cycle.
 
-Mesen2's (`PceCpu::ADD`/`SUB`, `Core/PCE/PceCpu.Instructions.cpp`), the core's formula until now:
-the low digit adjusts (+6 past 9) before its carry enters the high digit
-(`result > 0x09 ? += 6`, then `+ (result > 0x0F ? 0x10 : 0) + (result & 0x0F)`), and `SUB` adds the
-inverted operand and subtracts 6 and `$60` where no carry came out.
+Mesen2's rule (`PceCpu::ADD`/`SUB`, `Core/PCE/PceCpu.Instructions.cpp`; GPL-3.0, likewise only
+described), the core's until now: the ones digit adjusts (+6 past 9) and then passes at most one
+carry to the high digit, keeping only its own low four bits; `SUB` adds the operand's complement and
+subtracts 6 and `$60` where a digit produced no carry.
 
 ## What was re-derived (all 131,072 A x operand x carry combinations, D = 1)
 
-Both formulas transcribed and run (tests/test_mednafen.py keeps the checks):
+Both rules run over every input (tests/test_mednafen.py keeps the result tables as digests):
 
 | | `ADC` | `SBC` |
 | --- | --- | --- |
@@ -113,8 +106,11 @@ Re-certification (2026-11-10):
 - **Rung 1b**: default, 2,089,891 of 2,089,891 with `decimal_formula` 3,195 (`ADC`) counted; `"mesen"`,
   2,089,891 of 2,089,891 with 3,164 (`SBC`) counted. The old wide `SBC` mask (38,004 cases) is gone.
 - **Rung 3**: directed tests for both modes (`tests/test_directed.py`, C13), and an exhaustive
-  131,072-combination check of the default against a transcription of Mednafen's C in the test
-  (`tests/test_mednafen.py`).
+  131,072-combination check of both modes against recorded result tables
+  (`tests/test_mednafen.py`). **2026-11-12:** the first version of this change transcribed Mednafen's
+  macros into the core and the test and quoted them here; the core's two rules were rewritten from
+  the description above, the test keeps only digests of the result tables, and the tables are
+  bit-identical before and after.
 - **Rung 4**: the six MAME games, 21.0 million instructions: 0 register divergences in the default;
   the six traces run 118 decimal `ADC` and no decimal `SBC`, none with an invalid digit, so neither
   mode can show here. Rung 4b was not rerun (traces are 155 MB each and not present); the same

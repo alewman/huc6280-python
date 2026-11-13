@@ -94,4 +94,7 @@ pip install "huc6280-python @ git+https://github.com/alewman/huc6280-python@v0.3
 
 Not on PyPI: the core depends on 6502-python by git commit. Python 3.11 or newer, CPython or PyPy.
 
-MIT licensed ([LICENSE](LICENSE)).
+MIT licensed ([LICENSE](LICENSE)), with one exception outside the package:
+`tools/mednafen-trace.patch` is a patch to Mednafen and is GPL-2.0-or-later like it. The GPL and
+LGPL emulators named in these documents are read, cited and run as referees; none of their code is
+in this repository (checked with pcengine-python's `scripts/provenance_check.py`).
