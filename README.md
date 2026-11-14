@@ -9,7 +9,7 @@ timer, interrupt registers and PSG, is a decision in
 [docs/handoff-brief.md](docs/handoff-brief.md)); the console is the board,
 `pcengine-python`.
 
-**Status (2026-11-12, release 0.3.0): the core is built** (2026-10-24) and is the CPU of
+**Status (2026-11-12, release 0.4.0): the core is built** (2026-10-24) and is the CPU of
 `pcengine-python`, `supergrafx-python` and `pcenginecd-python`. `HuC6280(CPUFrame)`: every
 cycle one bus callback (`read_byte`, `write_byte`, `idle(address | None)`), the 21-bit
 mapper in the core, interrupt lines on the frame's `IRQ_LINE`, one `step()` per block
@@ -89,7 +89,7 @@ decisions taken and what was built at its end.
 ## Install
 
 ```sh
-pip install "huc6280-python @ git+https://github.com/alewman/huc6280-python@v0.3.0"
+pip install "huc6280-python @ git+https://github.com/alewman/huc6280-python@v0.4.0"
 ```
 
 Not on PyPI: the core depends on 6502-python by git commit. Python 3.11 or newer, CPython or PyPy.

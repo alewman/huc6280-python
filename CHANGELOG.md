@@ -1,10 +1,10 @@
 # Changelog
 
 Releases are git tags; install one with
-`pip install "huc6280-python @ git+https://github.com/alewman/huc6280-python@v0.3.0"`.
+`pip install "huc6280-python @ git+https://github.com/alewman/huc6280-python@v0.4.0"`.
 The package is not on PyPI (it depends on 6502-python by git commit).
 
-## Unreleased
+## 0.4.0 (2026-11-14)
 
 Interrupt edge cases the Rust port found ([issue 0005](docs/issues/0005-interrupt-edge-cases-found-by-the-rust-port.md)),
 each a bug against the core's own poll rule (the poll sees the lines as they stood at the end of
