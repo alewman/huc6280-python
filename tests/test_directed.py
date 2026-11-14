@@ -915,6 +915,149 @@ def test_u25_rti_return_address_per_mode() -> None:
     assert _rti_return_address("mednafen") == CODE + 2  # IRQ1 is sampled, as the default
 
 
+# -- issue 0005: the poll rule (U21, U25) at the edges the Rust port found --------------------------
+# The rule: the poll sees the lines as they stood at the end of an instruction's second-to-last
+# cycle; a change in the last cycle waits for the next instruction's poll. BRK, entries and reset
+# do not poll. A capture and restore at any boundary changes nothing.
+
+CLI, NOP, BRK = 0x58, 0xEA, 0x00
+TIQ_ONLY, IRQ1_ONLY, NONE = (False, False, True), (True, False, False), (False, False, False)
+
+
+def _scheduled(
+    program: bytes,
+    start: tuple[bool, bool, bool],
+    schedule: dict[int, tuple[bool, bool, bool]],
+    *,
+    mode: str | None = None,
+) -> Host:
+    """``program`` at CODE with ``start`` asserted; ``schedule`` sets the lines from inside the
+    callback of the given bus cycle (counted from 0 over the whole run). Handlers are NOPs:
+    TIQ -> $6200, IRQ1 -> $6100, IRQ2 and BRK -> $6000, NMI -> $6300."""
+    machine = host(program)
+    machine.memory[0x4000:0x4400] = bytes([NOP]) * 0x400  # logical $6000-$63FF (MPR3 = $02)
+    for vector, target in ((0xFFF6, 0x6000), (0xFFF8, 0x6100), (0xFFFA, 0x6200), (0xFFFC, 0x6300)):
+        machine.memory[vector - 0xE000 : vector - 0xE000 + 2] = bytes([target & 0xFF, target >> 8])
+    cpu = machine.cpu
+    if mode:
+        cpu.vanished_interrupt = mode
+    cpu.set_irq_lines(*start)
+    count = [0]
+
+    def tick() -> None:
+        lines = schedule.get(count[0])
+        count[0] += 1
+        if lines is not None:
+            cpu.set_irq_lines(*lines)
+
+    def read(address: int) -> int:
+        tick()
+        return machine.memory[address]
+
+    def write(address: int, value: int) -> None:
+        tick()
+        machine.memory[address] = value
+
+    cpu.read_byte, cpu.write_byte, cpu.idle = read, write, lambda address: tick()
+    return machine
+
+
+def _trail(machine: Host, steps: int, restore_at: int | None = None) -> list[int]:
+    """PC after each step; with ``restore_at``, a capture and restore before that step."""
+    trail = []
+    for index in range(steps):
+        if index == restore_at:
+            machine.cpu.restore_state(machine.cpu.capture_state())
+        machine.cpu.step()
+        trail.append(machine.cpu.pc)
+    return trail
+
+
+def _vanished_then_rising() -> Host:
+    # CLI; NOP x4. TIQ drops in the first NOP's last cycle (cycle 3): the entry after it finds
+    # nothing (C18, Mesen2's rule) and runs the second NOP; IRQ1 rises in that NOP's last cycle (5).
+    return _scheduled(bytes([CLI, NOP, NOP, NOP, NOP]), TIQ_ONLY, {3: NONE, 5: IRQ1_ONLY})
+
+
+def test_0005_a_line_rising_in_a_vanished_entrys_instruction_waits_for_the_next_poll() -> None:
+    # Item 1: as after any other instruction (U21, U25 default), one more instruction runs.
+    assert _trail(_vanished_then_rising(), 5) == [0x4001, 0x4002, 0x4003, 0x4004, 0x6100]
+    plain = _scheduled(bytes([CLI, NOP, NOP, NOP, NOP]), NONE, {5: IRQ1_ONLY})
+    assert _trail(plain, 5) == [0x4001, 0x4002, 0x4003, 0x4004, 0x6100]
+
+
+def _swapped() -> Host:
+    # CLI; NOP x3 with TIQ up; in the first NOP's last cycle TIQ drops and IRQ1 rises.
+    return _scheduled(bytes([CLI, NOP, NOP, NOP]), TIQ_ONLY, {3: IRQ1_ONLY})
+
+
+def test_0005_a_source_swapped_in_the_last_cycle_is_not_taken_at_that_boundary() -> None:
+    # Item 2: the poll saw TIQ only. By default TIQ has gone (dropped, C18) and IRQ1, which rose
+    # after the poll, waits for the next instruction's poll.
+    assert _trail(_swapped(), 4) == [0x4001, 0x4002, 0x4003, 0x6100]
+    # "latched" takes what the poll saw, through its own vector: TIQ.
+    latched = _scheduled(bytes([CLI, NOP, NOP, NOP]), TIQ_ONLY, {3: IRQ1_ONLY}, mode="latched")
+    assert _trail(latched, 3)[-1] == 0x6200
+
+
+def _dropped() -> Host:
+    # CLI; NOP; NOP with IRQ1 up, dropped in the first NOP's last cycle: taken (Mesen2, C18).
+    return _scheduled(bytes([CLI, NOP, NOP]), IRQ1_ONLY, {3: NONE})
+
+
+def test_0005_capture_and_restore_keep_the_lines_the_poll_saw() -> None:
+    # Item 3: the lines the poll saw are state (CPUState.polled_irq_lines).
+    machine = _dropped()
+    machine.step(2)
+    state = machine.cpu.capture_state()
+    assert state.polled_irq_lines == 0x02 and not state.irq1
+    machine.cpu.restore_state(state)
+    machine.step()
+    assert machine.cpu.pc == 0x6100
+    swapped = _swapped()
+    swapped.step(2)
+    assert swapped.cpu.capture_state().polled_irq_lines == 0x04  # TIQ, $1403 layout
+    swapped.step()
+    assert swapped.cpu.capture_state().polled_irq_lines is None  # until the next boundary only
+
+
+@pytest.mark.parametrize("scenario", [_vanished_then_rising, _swapped, _dropped])
+def test_0005_a_round_trip_at_any_boundary_changes_nothing(scenario) -> None:
+    steps = 6
+    expected = _trail(scenario(), steps)
+    for boundary in range(steps):
+        assert _trail(scenario(), steps, restore_at=boundary) == expected, boundary
+
+
+def test_0005_a_state_from_before_the_field_loads_as_the_poll_agreeing() -> None:
+    from huc6280.state import CPUState
+
+    assert CPUState().polled_irq_lines is None
+    with pytest.raises(ValueError, match="polled_irq_lines"):
+        CPUState(polled_irq_lines=8)
+
+
+def test_0005_brk_does_not_poll() -> None:
+    # Item 4: BRK is the interrupt sequence (an entry is BRK with its opcode forced) and, like an
+    # entry and as on the 6502 (the frame's rule), does not poll: an NMI latched during it waits
+    # for the handler's first instruction. Only NMI shows it (BRK sets I); NMI is not connected on
+    # a PC Engine (start-here.md).
+    machine = _scheduled(bytes([BRK, 0x00]), NONE, {})
+    original = machine.cpu.read_byte
+    count = [0]
+
+    def read(address: int) -> int:
+        count[0] += 1
+        if count[0] == 2:  # the signature byte: well before BRK's last cycle
+            machine.cpu.request_non_maskable_interrupt()
+        return original(address)
+
+    machine.cpu.read_byte = read
+    machine.step()
+    assert machine.cpu.pc == 0x6000 and machine.cpu.capture_state().skipped_poll
+    assert _trail(machine, 2) == [0x6001, 0x6300]
+
+
 # -- the public opcode accessor (embedding contract) --------------------------------------
 
 

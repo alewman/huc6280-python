@@ -56,12 +56,19 @@ def next_boundary(state: CPUState) -> BoundaryKind:
     irq = state.polled_maskable_interrupt
     masked = bool(state.p & I) if state.polled_i is None else state.polled_i
     if (state.maskable_interrupt_pending if irq is None else irq) and not masked:
-        # The vector is chosen from the lines in priority order (HW HB-13).
-        if state.tiq and not state.irq_disable & 4:
+        # The vector is chosen from the lines the poll saw, in priority order (HW HB-13). The
+        # class attributes are not state: this is the defaults' decision (irq_poll_cycle
+        # "second_to_last", vanished_interrupt "mesen2": the timer must still be asserted, and
+        # with no source left an instruction runs; C18, issue 0005).
+        enabled = ~state.irq_disable & 7
+        live = (state.tiq << 2 | state.irq1 << 1 | state.irq2) & enabled
+        polled = live if state.polled_irq_lines is None else state.polled_irq_lines & enabled
+        if polled & live & 4:
             return BoundaryKind.TIQ
-        if state.irq1 and not state.irq_disable & 2:
+        if polled & 2:
             return BoundaryKind.IRQ1
-        return BoundaryKind.IRQ2
+        if polled & 1:
+            return BoundaryKind.IRQ2
     return BoundaryKind.INSTRUCTION
 
 

@@ -7,7 +7,7 @@ mame-oracle.md); the whole of each is ``scripts/mame_replay.py``. Skipped when n
 from pathlib import Path
 
 import pytest
-from mame_replay import Line, read_log, replay
+from mame_replay import Line, Replay, Report, _take_interrupt, read_log, replay
 
 TRACES = Path(__file__).resolve().parent / "mame_traces"
 GAMES = sorted(
@@ -30,6 +30,21 @@ def test_read_log_pairs_the_two_lines_and_the_reads(tmp_path: Path) -> None:
     assert lines[1].registers[6:8] == (0xFF, 0xF8)
     assert lines[1].reads == ((0x1FF000, 0x3F),)
     assert lines[2].registers[0] == 0xE009
+
+
+def test_take_interrupt_at_the_handler_already_leaves_no_line_asserted() -> None:
+    # Issue 0005 item 5: when PC already equals the handler there is no entry to make, and the
+    # line the replay would have asserted for it must not stay asserted.
+    rom = bytearray(0x2000)
+    rom[0x1FFE:0x2000] = bytes([0x00, 0xE0])  # reset -> $E000
+    rom[0x1FF8:0x1FFA] = bytes([0x00, 0xE1])  # IRQ1 -> $E100
+    harness = Replay(bytes(rom))
+    cpu = harness.cpu
+    cpu.step()  # the reset sequence
+    cpu.pc = 0xE100
+    line = Line((0xE100, 0, 0, 0, (cpu.s - 3) & 0xFF, 0x04, *cpu.mpr), 0, ())
+    assert _take_interrupt(harness, line, Report()) is None
+    assert cpu.irq_lines == (False, False, False)
 
 
 @pytest.mark.skipif(not GAMES, reason="no MAME traces: python -I scripts/mame_trace.py GAME --io")

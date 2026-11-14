@@ -251,6 +251,10 @@ class ControlMixin:
         self._fetch()  # C2: the signature byte is skipped, so BRK is two bytes
         self._interrupt(VECTOR_IRQ2, self.p | B)  # U15
         self._io()
+        # BRK is the interrupt sequence (an entry is BRK with the opcode forced to $00: srg320's
+        # HDL, Mesen2's ProcessIrq) and, like an entry, does not poll: the handler's first
+        # instruction runs first (the 6502 frame's rule; issue 0005). step() moves this to _polled.
+        self._deferred = NO_POLL
 
     def _interrupt(self, vector: int, pushed_p: int) -> None:
         pc = self.pc
@@ -276,10 +280,16 @@ class ControlMixin:
         else:
             vector = self._maskable_vector()
             if vector is None:
-                # Nothing is left to enter: the instruction runs instead (issue 0002, C18).
+                # Nothing is left to enter: the instruction runs instead (issue 0002, C18), with
+                # the bookkeeping step() does after any instruction, so a request changed in its
+                # last cycle waits for the next poll as it would anywhere else (issue 0005).
                 self._polled = None
-                self._polled_i = None
-                return self._execute()
+                cycles = self._execute()
+                deferred = self._deferred
+                if deferred is not None:
+                    self._polled = deferred
+                    self._deferred = None
+                return cycles
         # Two dummy reads (the opcode and the byte after it, both discarded), the pushes,
         # the vector, and an internal cycle (Mesen's ProcessIrq; C3, C8).
         self._dummy(self.pc)
@@ -318,24 +328,29 @@ class ControlMixin:
     irq_poll_cycle = "second_to_last"
 
     def _boundary_interrupt(self) -> int:
-        # Which lines the poll saw: the requests changed in the last cycle (after the poll) leave
-        # the frame's _polled set, and the lines as they were before that change are _lines_before.
-        deferred = self._polled is not None and not self._polled & NO_POLL
-        self._poll_lines = self._lines_before if self._polled is not None else self._lines
+        # Which lines the poll saw: those at the last instruction's last-but-one access when a
+        # line changed after it (_polled_lines, set by _execute), else the lines as they stand.
+        polled_lines = self._polled_lines
+        self._polled_lines = None
+        lines = self._lines
         mode = self.irq_poll_cycle
-        if mode != "second_to_last":
-            if mode == "last":
-                seen = self._lines
-            elif mode == "mednafen":
-                seen = (self._poll_lines & ~TIQ_BIT) | (self._lines & TIQ_BIT)
-            else:
-                raise ValueError(f"unknown irq_poll_cycle {mode!r}")
-            self._poll_lines = seen
-            if deferred:
-                # The frame kept the requests from before the last cycle; the mode counts the
-                # levels at the boundary instead.
-                asserted = IRQ_LINE if seen & ~self._irq_disable & 7 else 0
-                self._polled = (self._polled & ~IRQ_LINE) | asserted
+        if mode == "second_to_last":
+            self._poll_lines = lines if polled_lines is None else polled_lines
+            return super()._boundary_interrupt()
+        if mode == "last":
+            seen = lines
+        elif mode == "mednafen":
+            seen = lines if polled_lines is None else polled_lines
+            seen = (seen & ~TIQ_BIT) | (lines & TIQ_BIT)
+        else:
+            raise ValueError(f"unknown irq_poll_cycle {mode!r}")
+        self._poll_lines = seen
+        polled = self._requests if self._polled is None else self._polled
+        if not polled & NO_POLL:
+            # The frame kept the requests from before the last cycle; the mode counts its own
+            # lines instead.
+            asserted = IRQ_LINE if seen & ~self._irq_disable & 7 else 0
+            self._polled = (polled & ~IRQ_LINE) | asserted
         return super()._boundary_interrupt()
 
     def _maskable_vector(self) -> int | None:
@@ -376,6 +391,7 @@ class ControlMixin:
         self._sync_irq()
         self._polled = NO_POLL
         self._deferred = None
+        self._polled_lines = None
         return self._cycles
 
     def _halted(self) -> int:
@@ -399,10 +415,24 @@ class ControlMixin:
         timer's (pcetech 2.1). A source masked by ``irq_disable`` is remembered, not taken.
         """
         lines = (IRQ2_BIT if irq2 else 0) | (IRQ1_BIT if irq1 else 0) | (TIQ_BIT if tiq else 0)
-        if self._deferred is None and lines != self._lines:
-            self._lines_before = self._lines  # what the poll saw if no access follows (C18)
+        changed = lines ^ self._lines
+        if not changed:
+            return
+        polled_lines = self._polled_lines
+        if polled_lines is not None:
+            # Between steps after a change the poll missed: what the host changes now counts for
+            # the next boundary, as the frame's request methods treat _polled.
+            self._polled_lines = (polled_lines & ~changed) | (lines & changed)
         self._lines = lines
         self._sync_irq()
+        if self._deferred is None:
+            # Learn whether a bus access follows, even when the frame's IRQ_LINE is unchanged (a
+            # source swapped for another): no access means the change came after the poll.
+            self._request(self._requests)
+
+    def _confirm(self) -> None:
+        super()._confirm()
+        self._lines_at_access = self._lines
 
     @property
     def irq_lines(self) -> tuple[bool, bool, bool]:

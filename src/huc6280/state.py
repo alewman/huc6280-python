@@ -23,8 +23,8 @@ class CPUState:
     inputs and their disable gate, and the frame's poll state (the requests the host has
     made and the core has not yet taken, and what decides the next ``step()``). Host
     memory, devices, scheduling and cycle counters are excluded: restoring this value
-    restores the processor, not a machine. The fields from ``halted`` on are 6502-python's
-    frame's, as in its ``CPUState``.
+    restores the processor, not a machine. The fields from ``halted`` to ``skipped_poll``
+    are 6502-python's frame's, as in its ``CPUState``; ``polled_irq_lines`` is this core's.
     """
 
     a: int = 0
@@ -58,6 +58,12 @@ class CPUState:
     #: The last step was BRK, an interrupt entry or reset, which do not poll: the next
     #: boundary runs an instruction.
     skipped_poll: bool = False
+    #: The maskable lines the last instruction's poll saw (IRQ2, IRQ1, TIQ in bits 0-2, the
+    #: ``$1403`` layout), when a line changed after the poll, in the instruction's last cycle;
+    #: None when the poll saw ``irq1``, ``irq2`` and ``tiq`` as they stand. It picks the vector
+    #: and decides a vanished interrupt (C18). Added in issue 0005; None, the default, is how a
+    #: state from before it loads.
+    polled_irq_lines: int | None = None
 
     def __post_init__(self) -> None:
         for name in ("a", "x", "y", "s", "p", "mpr_latch"):
@@ -85,6 +91,8 @@ class CPUState:
         for name in ("polled_i", "polled_maskable_interrupt", "polled_non_maskable_interrupt"):
             if getattr(self, name) is not None:
                 _require_bool(name, getattr(self, name))
+        if self.polled_irq_lines is not None:
+            _require_int("polled_irq_lines", self.polled_irq_lines, 7)
         if self.p & 0x10:
             raise ValueError("p must have B (bit 4) clear: B is not stored")
 

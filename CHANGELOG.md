@@ -4,6 +4,31 @@ Releases are git tags; install one with
 `pip install "huc6280-python @ git+https://github.com/alewman/huc6280-python@v0.3.0"`.
 The package is not on PyPI (it depends on 6502-python by git commit).
 
+## Unreleased
+
+Interrupt edge cases the Rust port found ([issue 0005](docs/issues/0005-interrupt-edge-cases-found-by-the-rust-port.md)),
+each a bug against the core's own poll rule (the poll sees the lines as they stood at the end of
+an instruction's second-to-last cycle; BRK, entries and reset do not poll; a capture and restore
+changes nothing). No default changed and no switch was added.
+
+- **Behaviour change:** the instruction an entry runs when its source has gone (C18) now does
+  the bookkeeping any instruction does: a line raised in its last cycle waits one more
+  instruction instead of being taken at the next boundary.
+- **Behaviour change:** the poll keeps each of the three lines, not only "an enabled line is
+  asserted": a source that drops in an instruction's last cycle while another rises (TIQ for
+  IRQ1, say) is decided on what the poll saw. By default the gone timer is dropped (C18) and the
+  new source waits for the next poll; `vanished_interrupt = "latched"` takes the polled one.
+- **Behaviour change:** `BRK` does not poll, like an interrupt entry (the code now does what
+  `CPUState`'s docstring said). Visible only through NMI, which no PC Engine connects: BRK sets I.
+- **State format:** `CPUState.polled_irq_lines` (`int | None`, default `None`): the lines the last
+  poll saw, IRQ2/IRQ1/TIQ in bits 0-2, when a line changed after it; `None` when the poll saw the
+  lines as they stand. A state without it (default `None`) loads as before. `capture_state` and
+  `restore_state` carry it, so a round trip at any boundary is now exact.
+- `debug.next_boundary` decides the vector from the polled lines and drops a vanished timer, as
+  the default class attributes do (it fell through to `IRQ2` before).
+- Rung 4's replay (`tests/mame_replay.py`) no longer leaves a line asserted when MAME's next line
+  is already the handler.
+
 ## 0.3.0 (2026-11-12)
 
 - **Behaviour change:** decimal `ADC` and `SBC` with an invalid BCD digit follow Mednafen's

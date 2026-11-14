@@ -212,18 +212,20 @@ def _take_interrupt(replay: Replay, line: Line, report: Report, previous: int = 
             break
     else:
         return None
+    if cpu.pc == line.registers[0]:
+        # Already at the handler: no entry to make, and no line left asserted (issue 0005).
+        return None
     if name == "nmi":
         cpu.request_non_maskable_interrupt()
     else:
         cpu.set_irq_lines(name == "irq1", name == "irq2", name == "tiq")
-    if cpu.pc == line.registers[0]:
-        return None
     if next_boundary(cpu.capture_state()) is BoundaryKind.INSTRUCTION:
         # The core's poll would wait an instruction (CLI, SEI or PLP before it, or an entry):
-        # MAME took the interrupt now, so make the poll see the current I and count it.
+        # MAME took the interrupt now, so make the poll see the current I and lines and count it.
         # (U21: MAME takes it right after CLI; Mesen and Mednafen, like the core, a step later.)
         cpu._polled_i = None
         cpu._polled = None
+        cpu._polled_lines = None
         report.forced[name] += 1
         report.forced_after[(name, previous)] += 1
     cpu.step()

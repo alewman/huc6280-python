@@ -129,7 +129,10 @@ and IRQ1"). The interrupts are **sampled in the last bus cycle** of an
 instruction (HW HB-12); Mednafen samples both the lines and I at the start of
 the last cycle (`LastCycle`), the same rule as 6502-python's frame (end of the
 second-to-last cycle), so CLI, SEI and PLP take effect one instruction late
-exactly as on the 6502. **The entry takes 8 cycles in Mesen, Mednafen,
+exactly as on the 6502. The poll keeps each of the three lines as it stood then
+(`CPUState.polled_irq_lines` when one changed in the last cycle), so a source that drops while
+another rises in the last cycle is decided on the one polled (C18), and the new one waits for the
+next poll. `BRK`, an interrupt entry and reset do not poll (issue 0005). **The entry takes 8 cycles in Mesen, Mednafen,
 Geargrafx and ares and 7 in MAME** (C3). A **block transfer cannot be
 interrupted**: the interrupt is taken when it ends (pcetech; Mesen, MAME and
 Mednafen all run it to completion).

@@ -62,7 +62,14 @@ class HuC6280(
         self.idle = _no_idle if idle is None else idle
         self._init_registers()
         self._lines = 0
-        self._lines_before = 0
+        #: The lines as they stood at the last bus access (kept up to date by _confirm): what the
+        #: poll sees if a line changes in an instruction's last cycle.
+        self._lines_at_access = 0
+        #: The lines the last instruction's poll saw, set when a line changed after it (in the
+        #: last cycle) and only until the next boundary; None when the poll saw the lines as they
+        #: stand. CPUState.polled_irq_lines (issue 0005).
+        self._polled_lines: int | None = None
+        #: The lines the boundary's interrupt decision counts, per irq_poll_cycle (U25).
         self._poll_lines = 0
         self._irq_disable = 0
         cls = type(self)
@@ -95,6 +102,14 @@ class HuC6280(
             handler(self)
         else:
             handler(self, mode)
+        # A line that changed after the last bus access changed in the last cycle, after the poll
+        # (U21): the next boundary decides on the lines as they stood at that access. The frame
+        # keeps only whether an enabled line was asserted; a swap of sources leaves that unchanged
+        # (issue 0005).
+        if self._deferred is not None and self._lines != self._lines_at_access:
+            self._polled_lines = self._lines_at_access
+        else:
+            self._polled_lines = None
         return self._cycles
 
     # -- state -----------------------------------------------------------
@@ -121,6 +136,7 @@ class HuC6280(
             tiq=tiq,
             irq_disable=self._irq_disable,
             **self._poll_fields(),
+            polled_irq_lines=self._polled_lines,
         )
 
     def restore_state(self, state: CPUState) -> None:
@@ -134,9 +150,10 @@ class HuC6280(
         self._mpr_latch = state.mpr_latch
         self._lines = (0x02 if state.irq1 else 0) | (0x01 if state.irq2 else 0)
         self._lines |= 0x04 if state.tiq else 0
-        self._lines_before = self._poll_lines = self._lines
+        self._poll_lines = self._lines
+        self._polled_lines = state.polled_irq_lines
         self._irq_disable = state.irq_disable
-        self._restore_poll(state)
+        self._restore_poll(state)  # its _confirm sets _lines_at_access
 
 
 __all__ = ["HuC6280"]
