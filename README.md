@@ -1,0 +1,109 @@
+<!-- SPDX-License-Identifier: MIT -->
+# huc6280-python
+
+A readable, pure-Python **Hudson Soft HuC6280** CPU core: the 8-bit
+processor of the PC Engine, TurboGrafx-16, SuperGrafx and the CD-ROM systems, a
+CMOS 6502-family core with a 21-bit memory mapper (eight 8 KB mapping registers),
+block transfers, the T flag, a 7.16/1.79 MHz clock switch and a handful of Hudson
+instructions. This repository is only the CPU (the boundary, with the on-die
+timer, interrupt registers and PSG, is a decision in
+[docs/handoff-brief.md](docs/handoff-brief.md)); the console is the board,
+`pcengine-python`.
+
+**Status (2026-11-12, release 0.4.0): the core is built** (2026-10-24) and is the CPU of
+`pcengine-python`, `supergrafx-python` and `pcenginecd-python`. `HuC6280(CPUFrame)`: every
+cycle one bus callback (`read_byte`, `write_byte`, `idle(address | None)`), the 21-bit
+mapper in the core, interrupt lines on the frame's `IRQ_LINE`, one `step()` per block
+transfer. It subclasses [6502-python](https://github.com/alewman/6502-python)'s frame (pinned
+by commit, never copied) as `65816-python` does. Passing, by rung
+([docs/validation.md](docs/validation.md)):
+
+- 0: the opcode map against Hudson's software manual (234 opcodes);
+- 1: SingleStepTests `huc6280`, 640,000 of 640,000 cases (emulator tier, masks counted; exact with
+  `decimal_formula = "mesen"`, the corpus's own decimal formula, and 1,552 decimal cases counted in the
+  default, Mednafen's: [issue 0004](docs/issues/0004-decimal-adc-sbc-mednafen-formulas.md));
+- 1b: the Rockwell 65C02 corpus, results only, 2,089,891 cases on 209 shared opcodes;
+- 2: Dormann's 65C02 extended opcodes test, relocated, to its success trap;
+- 3: directed tests for the hardware-verified and manufacturer-tier quirks;
+- 4: MAME 0.285 replay of six games, 21.0 million instructions, no register divergence;
+- 4b: the same six games against Mednafen 1.32.1, 20.4 million instructions, no divergence;
+- 5: srg320's VHDL core under GHDL, 627,484 cases, as a third opinion on the bus.
+
+**There is no hardware-captured per-instruction data and no die-level model of this
+chip**; the volume judges are emulator tier (detectors). Nothing here was run on a real
+console. Tooling at the family bar: `state`, `disasm`, `debug`, `trace`, `console`,
+`harness`, and `python -m huc6280 GAME.pce [--trace out.jsonl | --debug]`.
+
+```sh
+python -m venv .venv && .venv/bin/pip install -e '.[dev]'
+.venv/bin/python -m pytest -m "not slow"           # the quick loop
+python -I scripts/run_single_step.py               # rung 1, whole (PyPy: minutes)
+python -I scripts/run_rockwell.py                  # rung 1b, whole
+python -I scripts/mame_trace.py GAME.7z --io --seconds 2 && python -I scripts/mame_replay.py tests/mame_traces/GAME
+```
+
+## What is fetched
+
+Nothing third-party is committed. `scripts/fetch_references.py` rebuilds
+`reference/` from `scripts/pinned_files.json` (Hudson's hardware, software and
+PSG manuals, MacDonald's pcetech and SuperGrafx notes, Shu's CPU page,
+Covell's CPU Test and its page, a 750 MB GHDL bundle and Mednafen's source,
+all by SHA-256) and `scripts/pinned_repos.json` (11 repositories at full
+commit SHAs, sparse where large): SingleStepTests `huc6280` and `65x02`, MAME
+0.285's source, Mesen2, Mednafen's Beetle ports, ares, Geargrafx, the MiSTer
+TurboGrafx16 VHDL with its timing captures, the HuC assembler, and Dormann's
+65C02 test. The GPL trees among them (Mesen2, the Beetle ports, Geargrafx, the
+VHDL, Mednafen's tarball) are there to be built and run, never read
+(docs/restart.md).
+
+```sh
+python -I scripts/fetch_references.py --no-tools   # everything but the two tool pins (~200 MB)
+python -I scripts/fetch_references.py --verify     # check what is present
+python -I scripts/build_referees.py huc6280-vhdl --oss /path/to/oss-cad-suite
+```
+
+They need `git`, `curl`, `pdftotext` (poppler) for `manual_table.py`, and `7z` for
+games kept as `.7z`. No sudo.
+
+## Scripts
+
+| Script | What |
+| --- | --- |
+| `fetch_references.py` | fetch and verify the pinned files and repositories |
+| `build_referees.py` | analyse srg320's HUC6280 VHDL with GHDL |
+| `sst_reader.py` | read SingleStepTests huc6280's binary files |
+| `survey_sst.py` | cycle counts and bus shapes per opcode in the corpus |
+| `compare_cycles.py` | four emulators' base cycle tables side by side |
+| `opcode_map.py` | the opcode grid with modes, bytes and cycles |
+| `manual_table.py` | bytes and cycles read out of Hudson's software manual, compared |
+| `mame_trace.py` | the MAME per-instruction trace and hardware-page read log, and a screen capture |
+| `run_single_step.py`, `run_rockwell.py` | rungs 1 and 1b over every case, a process per chunk |
+| `mame_replay.py` | rung 4: replay a MAME trace through the core |
+
+Run anything that reads `reference/` with `python -I`. Traces go in
+`tests/mame_traces/` (gitignored); never commit ROMs, traces or fetched files.
+
+## Documents
+
+[docs/README.md](docs/README.md) is the index; [CHANGELOG.md](CHANGELOG.md) lists the releases;
+[docs/handoff-brief.md](docs/handoff-brief.md) is the brief the core was built from, with the
+decisions taken and what was built at its end.
+
+## Install
+
+```sh
+pip install "huc6280-python @ git+https://github.com/alewman/huc6280-python@v0.4.0"
+```
+
+Not on PyPI: the core depends on 6502-python by git commit. Python 3.11 or newer, CPython or PyPy.
+
+MIT licensed ([LICENSE](LICENSE)). The GPL tools this work used (the Mednafen trace patch,
+the testbenches for srg320's VHDL and the Mesen2 driver) left the repository on 2026-11-21 and
+are found through `HUC6280_GPL_TOOLS` (docs/provenance.md). The GPL
+emulators named in these documents (Mesen2, Mednafen, srg320's MiSTer VHDL) are **run as closed
+boxes only and their source is not read** (docs/restart.md): their outputs are detectors and,
+where marked, closed-box measurements; none of their code is in this repository (checked with
+pcengine-python's `scripts/provenance_check.py`). MAME's BSD-3-Clause CPU and cartridge files and
+ares (ISC) are read and cited; the one piece ported from MAME, the harness's HuCard mirroring,
+carries its notice ([NOTICE.md](NOTICE.md)). Every source of the core and its provenance:
+[docs/provenance.md](docs/provenance.md).
