@@ -2,7 +2,7 @@
 
 ``scripts/dormann_to_ca65.py`` rewrites the source (as65 syntax, GPL-3.0, research tier for this
 chip) for ca65 with the HuC6280 settings, and ``ca65``/``ld65`` (cc65 2.19, pinned in
-pinned_files.json under ~/.local/opt or on the PATH) make a 64 KB image. The program is
+pinned_files.json; ``$CC65_DIR/bin``, default ~/.local/opt/cc65-2.19, or the PATH) make a 64 KB image. The program is
 self-checking: it traps (a jump or branch to itself) at the first wrong result, and reaches
 ``success_address`` when everything passed.
 
@@ -13,6 +13,7 @@ one bank, so the absolute ``$00xx``/``$01xx`` the program uses and the zero page
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -23,7 +24,7 @@ from huc6280 import HuC6280
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "reference" / "build" / "dormann"
-CC65 = Path.home() / ".local" / "opt" / "cc65-2.19" / "bin"
+CC65 = Path(os.environ.get("CC65_DIR") or Path.home() / ".local" / "opt" / "cc65-2.19") / "bin"
 BANK = (0x10, 0x10, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17)
 SOURCE = ROOT / "reference" / "src" / "dormann" / "65C02_extended_opcodes_test.a65c"
 

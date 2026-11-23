@@ -7,7 +7,7 @@ reported as fixing minor audio faults; nothing found says its CPU differs).
 It is a CMOS 6502-family core with Hudson's additions and, on the same die, a
 memory mapper, a timer, an interrupt controller, an input port, an output port
 and a six-channel sound generator. This repository builds the CPU alone. The
-board (`/data/emu/pcengine-python`, prepared in parallel) owns everything
+board (`pcengine-python`, a sibling checkout, prepared in parallel) owns everything
 outside it, and [the boundary is a decision](handoff-brief.md#the-core-boundary).
 
 Paths: `src/X` is `reference/src/X`, `docs/X` is `reference/docs/X`, all filled
