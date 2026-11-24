@@ -24,7 +24,9 @@ Everything measured on this page was run on 2026-10-23 with `scripts/`:
 
 ## The opcode grid
 
-Mnemonics from Mesen2's table (`opcode_map.py --grid`); the 23 `NOP`s are
+Mnemonics as `opcode_map.py --grid` printed them on 2026-10-23 from Mesen2's source tables (a
+program reading GPL source: HYPOTHESIS where the manual and SST do not confirm it; the script is
+retired since 2026-11-24, docs/provenance.md); the 23 `NOP`s are
 $0B $1B $2B $33 $3B $4B $5B $5C $63 $6B $7B $8B $9B $AB $BB $CB $DB $DC $E2
 $EA $EB $FB $FC (pcetech tested 22 of them and found them all 2-cycle NOPs; the
 list is the same, C4 for the odd one out).

@@ -33,6 +33,11 @@ SRC = ROOT / "reference" / "src"
 
 
 def table(path: Path, name: str, rows: int = 16) -> list[int]:
+    if not path.is_file():
+        # Since 2026-11-24 no closed-box emulator source is fetched (Aubrey's rule), and
+        # reading such source by program is reading it: this survey's Geargrafx, Mednafen
+        # and Mesen2 columns are retired (docs/provenance.md, "Closed-box sources removed").
+        raise SystemExit(f"{path.relative_to(ROOT)}: closed-box source, not fetched since 2026-11-24")
     text = path.read_text(encoding="utf-8", errors="replace")
     start = text.index(name)
     body = text[start : text.index("};", start)]

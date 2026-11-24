@@ -133,3 +133,32 @@ huc6280-rust-fast and pcengine-python.
 
 Local `main` is two commits ahead of `origin/main` (`4c57f5d`, `265df88`
 "Release 0.4.0", not tagged).
+
+## Closed-box sources removed (2026-11-24)
+
+Aubrey's rule of 2026-11-24: an MIT repository does not download or keep the source of
+anything the family's `sources.md` marks closed box only, unless a program with no shipped
+build is built from it. Pins removed from `scripts/pinned_repos.json`, trees moved aside
+unopened, out of the repository (not deleted): Mesen2
+(https://github.com/SourMesen/Mesen2 @ `b9fa69ddc6d0a331fb103fdb5eef6904305703c2`, GPL-3.0),
+Beetle PCE (https://github.com/libretro/beetle-pce-libretro @
+`b96c11e095b6a40a412d2da02766ae1c3f4fd539`, GPL-2.0), Beetle PCE Fast
+(https://github.com/libretro/beetle-pce-fast-libretro @
+`4eee99c451f85ebe66d1591de88b892015b23059`, GPL-2.0) and Geargrafx
+(https://github.com/drhelius/Geargrafx @ `57c257dda25f441fff3c63a63bbc4ba7cbb713e3`, GPL-3.0).
+
+**Kept, with a question for Aubrey:** TurboGrafx16_MiSTer (`827d45f4`, unlicensed: run only),
+because `scripts/build_referees.py` analyses its HuC6280 VHDL with GHDL for rung 5; and the
+Mednafen 1.32.1 tarball with its unpacked tree under `reference/build/` (GPL-2.0), because
+`scripts/build_mednafen.py` builds the traced detector from it with the emu-tools-gpl2 patch.
+Neither has a shipped build that would do. Whether those builds move to emu-tools-gpl /
+emu-tools-gpl2 is open.
+
+**For review (a finding, not fixed here):** `scripts/compare_cycles.py`, `scripts/opcode_map.py`
+and `scripts/manual_table.py` parse tables (cycle counts, opcode sizes, the opcode and
+addressing-mode tables) out of the Geargrafx, Beetle PCE Fast and Mesen2 sources at run time,
+and `opcode_map.py`'s `MODE_TEXT` spells Mesen2's addressing-mode names. A program reading GPL
+source is still reading it (restart.md rule 1). They now stop with a message when the trees are
+absent; the tables they printed on 2026-10-23 (docs/timing.md) are kept as recorded and marked.
+Re-establishing them from Hudson's manual, MAME's BSD-3 `h6280.cpp` and SingleStepTests, or
+retiring the scripts, is Aubrey's call.

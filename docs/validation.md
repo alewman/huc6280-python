@@ -171,6 +171,9 @@ detects, the highest tier that covers a claim decides it.
   `SourMesen/Mesen2` @ `b9fa69dd...` (sparse). ares is ISC and may be read; the GPL trees
   (Beetle, Geargrafx, Mesen2) are run as closed boxes only, never read (docs/restart.md; until
   2026-11-19 they were read, and what was learned from them was re-established or withdrawn).
+  Since 2026-11-24 their source is not fetched at all (Aubrey); the pins above are citations,
+  and `compare_cycles.py`, `opcode_map.py` and `manual_table.py`, which parsed tables out of
+  those trees, stop with a message (docs/provenance.md, "Closed-box sources removed").
 - Covell's page calls Mednafen's CPU emulation "very accurate" (and says its
   VBlank starts late); the corpus README calls Mesen possibly the most
   accurate. Both are opinions checked against hardware by eye, not by data.

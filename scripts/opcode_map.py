@@ -33,7 +33,12 @@ MODE_TEXT = {
 
 
 def parse() -> tuple[list[str], list[str]]:
-    text = (SRC / "Mesen2/Core/PCE/PceCpu.cpp").read_text(encoding="utf-8")
+    source = SRC / "Mesen2/Core/PCE/PceCpu.cpp"
+    if not source.is_file():
+        # Retired 2026-11-24: Mesen2's source is not fetched (Aubrey's rule), and this
+        # parser read it (docs/provenance.md, "Closed-box sources removed").
+        raise SystemExit(f"{source}: closed-box source, not fetched since 2026-11-24")
+    text = source.read_text(encoding="utf-8")
     ops = text[text.index("_opTable[]") : text.index("typedef PceAddrMode")]
     names = re.findall(r"&C::(\w+)", ops)
     modes = re.findall(

@@ -41,44 +41,6 @@
   "note": "The source of tag mame0285, the installed /usr/games/mame. h6280.cpp/.h (the core, 7.16/1.79 MHz divider, MMU, timer, IRQ), pce.cpp (the driver). Emulator-derived."
  },
  {
-  "path": "reference/src/Mesen2",
-  "url": "https://github.com/SourMesen/Mesen2",
-  "rev": "b9fa69ddc6d0a331fb103fdb5eef6904305703c2",
-  "date": "2026-06-04T09:31:24Z",
-  "sparse": [
-   "/Core/PCE/",
-   "/Core/Shared/Emulator.h"
-  ],
-  "license": "GPL-3.0",
-  "note": "Mesen2's PCE core. Generated SingleStepTests huc6280; its authors claim the most accurate HuC6280 emulation (unverified here). Emulator-derived."
- },
- {
-  "path": "reference/src/beetle-pce",
-  "url": "https://github.com/libretro/beetle-pce-libretro",
-  "rev": "b96c11e095b6a40a412d2da02766ae1c3f4fd539",
-  "date": "2026-09-26T10:30:44Z",
-  "sparse": [
-   "/mednafen/pce/",
-   "/COPYING"
-  ],
-  "license": "GPL-2.0",
-  "note": "Mednafen's accurate PCE core (huc6280.cpp), as libretro's Beetle PCE. Covell's page says Mednafen's CPU timing matches hardware. Emulator-derived. Mednafen proper can be built from its source tarball if a second referee is wanted; see docs/validation.md."
- },
- {
-  "path": "reference/src/beetle-pce-fast",
-  "url": "https://github.com/libretro/beetle-pce-fast-libretro",
-  "rev": "4eee99c451f85ebe66d1591de88b892015b23059",
-  "date": "2026-10-23T11:25:19Z",
-  "sparse": [
-   "/mednafen/pce_fast/huc6280.c",
-   "/mednafen/pce_fast/huc6280.h",
-   "/mednafen/pce_fast/huc6280_ops.h",
-   "/COPYING"
-  ],
-  "license": "GPL-2.0",
-  "note": "Mednafen's fast PCE core (instruction-level cycle counts). Emulator-derived; a second implementation of the same table."
- },
- {
   "path": "reference/src/ares",
   "url": "https://github.com/ares-emulator/ares",
   "rev": "c76aaffa6e69778baf9a66d1da04298ac2ed7d1d",
@@ -90,24 +52,6 @@
   ],
   "license": "ISC",
   "note": "ares HuC6280 component + PCE CPU wrapper (timer, IRQ, I/O). Emulator-derived."
- },
- {
-  "path": "reference/src/Geargrafx",
-  "url": "https://github.com/drhelius/Geargrafx",
-  "rev": "57c257dda25f441fff3c63a63bbc4ba7cbb713e3",
-  "date": "2026-10-22T21:22:29Z",
-  "sparse": [
-   "/src/huc6280.cpp",
-   "/src/huc6280.h",
-   "/src/huc6280_inline.h",
-   "/src/huc6280_opcodes.cpp",
-   "/src/huc6280_opcodes_inline.h",
-   "/src/huc6280_timing.h",
-   "/src/huc6280_registers.h",
-   "/LICENSE"
-  ],
-  "license": "GPL-3.0",
-  "note": "Geargrafx HuC6280 (timing header, block transfers, speed change). Emulator-derived."
  },
  {
   "path": "reference/src/TurboGrafx16_MiSTer",
