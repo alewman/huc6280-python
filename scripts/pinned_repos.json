@@ -120,7 +120,7 @@
    "/docs/logs 42.95MHz/",
    "/ReadMe.md"
   ],
-  "license": "GPL-2.0+",
+  "license": "unlicensed: no LICENSE file at the pin, no notice on the HUC6280 files; run only, never committed (Aubrey, 2026-11-24; recorded as GPL-2.0+ before)",
   "note": "srg320's HuC6280 in VHDL (microcoded, hand-written: not die-traced), and the authors' logic-analyser screenshots of opcode timing at 42.95 MHz in docs/logs. The VHDL is an FPGA re-implementation, emulator tier; the screenshots are images of captures of a real console."
  },
  {

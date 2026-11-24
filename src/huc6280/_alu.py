@@ -6,7 +6,7 @@ says what the digit adjust does with a digit above 9, and no hardware result is 
 two emulators' behaviour is kept, each written from its own result table alone:
 
 - ``"mednafen"`` (default): the table recorded by running Mednafen 1.32.1 (patched for
-  tracing only, ``tools/mednafen-trace.patch``) as a closed box over every A, operand and
+  tracing only, ``$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch``) as a closed box over every A, operand and
   carry (``scripts/decimal_tables.py``). OBSERVED, provisional; closed-box measurement
   (emulator tier, Mednafen 1.32.1).
 - ``"mesen"``: the 11,346 decimal ADC/SBC cases of SingleStepTests huc6280 (MIT test data

@@ -27,8 +27,8 @@ Tier words: **hardware-captured** (recorded from a real console: Covell's
 photographs), **hardware-verified** (a statement by an author who ran it on a
 real console and says so: MacDonald), **manufacturer** (Hudson's manuals),
 **research** (community documents), **emulator** (SingleStepTests huc6280 via
-Mesen; MAME and ares, whose permissive source may be read; Mednafen, Mesen2 and
-the MiSTer VHDL, GPL, run as closed boxes only, docs/restart.md). Full
+Mesen; MAME and ares, whose permissive source may be read; Mednafen and Mesen2,
+GPL, and the MiSTer VHDL, unlicensed, run as closed boxes only, docs/restart.md). Full
 definitions in validation.md. **Nothing here was run on hardware**; the user
 has none.
 

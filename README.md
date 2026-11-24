@@ -99,8 +99,13 @@ Not on PyPI: the core depends on 6502-python by git commit. Python 3.11 or newer
 
 MIT licensed ([LICENSE](LICENSE)). The GPL tools this work used (the Mednafen trace patch,
 the testbenches for srg320's VHDL and the Mesen2 driver) left the repository on 2026-11-21 and
-are found through `HUC6280_GPL_TOOLS` (docs/provenance.md). The GPL
-emulators named in these documents (Mesen2, Mednafen, srg320's MiSTer VHDL) are **run as closed
+are found at their documented paths under one variable per tool repository (emu-tools
+`docs/contract.md`, section 5): the patch at
+`$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch` (GPL-2.0-only), the testbenches
+at `$EMU_TOOLS_GPL/tools/huc6280-python/huc6280_vhdl/` and the Mesen2 probe at
+`$EMU_TOOLS_GPL/tools/huc6280-python/vanish_probe.py` (docs/provenance.md). The GPL
+emulators named in these documents (Mesen2, Mednafen) and srg320's MiSTer VHDL (unlicensed: run
+only, fetched at the pin, never committed) are **run as closed
 boxes only and their source is not read** (docs/restart.md): their outputs are detectors and,
 where marked, closed-box measurements; none of their code is in this repository (checked with
 pcengine-python's `scripts/provenance_check.py`). MAME's BSD-3-Clause CPU and cartridge files and

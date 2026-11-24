@@ -6,7 +6,7 @@
 Writes DIR/cart.pce and DIR/error.log in the format scripts/mame_replay.py reads (so
 ``scripts/mame_replay.py DIR`` replays it): ``PC A X Y S P cycles`` and ``M MPR0..7`` per instruction
 and ``[luaengine] R address value`` for each hardware-page read (the format is MAME's by design;
-nothing here is Lua). The patch (tools/mednafen-trace.patch) logs from inside the CPU; Mednafen
+nothing here is Lua). The patch ($EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch) logs from inside the CPU; Mednafen
 runs headless with SDL's dummy video and audio drivers and stops by itself after ``--count``
 instructions. Cycles are 7.16 MHz units (master clocks / 3), like MAME's ``totalcycles``.
 See docs/mednafen-oracle.md.

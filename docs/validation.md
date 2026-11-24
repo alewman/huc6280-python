@@ -178,13 +178,16 @@ detects, the highest tier that covers a claim decides it.
   comparison in timing.md and undocumented-behavior.md is among these.
 - Mednafen proper (the program, not the libretro port) is pinned as
   `mednafen-1.32.1.tar.xz` (tool, 3.5 MB, SHA-256 `de7eb94a...`). It has no
-  headless instruction trace; **`tools/mednafen-trace.patch` adds one** and
+  headless instruction trace; **`mednafen-trace.patch` adds one** (a GPL-2.0-only tool outside
+  this repository, at `$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch`) and
   `scripts/build_mednafen.py` builds it (rung 4b below; recipe and traps in
   [mednafen-oracle.md](mednafen-oracle.md)).
 
 ### srg320's `HUC6280` VHDL (MiSTer TurboGrafx16): emulator-derived, a per-cycle third opinion
 
-- Pin: `MiSTer-devel/TurboGrafx16_MiSTer` @ `827d45f4...` (2026-07-09), GPL-2.0+,
+- Pin: `MiSTer-devel/TurboGrafx16_MiSTer` @ `827d45f4...` (2026-07-09), unlicensed (no LICENSE file at the pin and no notice on the
+  HUC6280 files: run only, fetched at the pin, never committed; Aubrey, 2026-11-24; recorded as
+  GPL-2.0+ until then),
   sparse (`/rtl/HUC6280/`, `/rtl/pce_top.vhd`, `/docs/logs 42.95MHz/`).
 - `HUC6280_CPU` (ports `A_OUT[20:0]`, `DI`, `DO`, `WE_N`, `RDY`, `NMI_N`,
   `IRQ1_N`, `IRQ2_N`, `IRQT_N`, `MCYCLE`) has the MMU inside; the PSG

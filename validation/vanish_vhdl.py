@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""C18 closed-box probe of srg320's HUC6280_CPU under GHDL (tests/huc6280_vhdl/tb_vanish.vhd).
+"""C18 closed-box probe of srg320's HUC6280_CPU under GHDL (tb_vanish.vhd, outside this repository).
 
     python -I validation/vanish_vhdl.py --ghdl-bin DIR      # DIR holds ghdl (oss-cad-suite/bin)
 
@@ -29,8 +29,13 @@ ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "reference" / "build" / "huc6280-vanish"
 RTL = ROOT / "reference" / "src" / "TurboGrafx16_MiSTer" / "rtl" / "HUC6280"
 UNITS = ("HUC6280_PKG", "AddSubBCD", "HUC6280_ALU", "HUC6280_AG", "HUC6280_MC", "HUC6280_CPU")
-# The testbench elaborates with srg320's GPL core: a GPL tool outside this repository.
-BENCH = Path(os.environ.get("HUC6280_GPL_TOOLS", ROOT / "tools")) / "huc6280_vhdl" / "tb_vanish.vhd"
+sys.path.insert(0, str(ROOT / "scripts"))
+import emu_tools
+
+# The testbench is elaborated with srg320's VHDL (unlicensed: run only, fetched at the pin and
+# never committed), so it is kept with the family's GPL tools, outside this repository, at
+# $EMU_TOOLS_GPL/tools/huc6280-python/huc6280_vhdl/tb_vanish.vhd (exit status 3 without it).
+BENCH = emu_tools.require(emu_tools.TB_VANISH)
 SOURCES = {"irq2": 0, "irq1": 1, "tiq": 2}
 VECTORS = {0x1FF6: "IRQ2", 0x1FF8: "IRQ1", 0x1FFA: "TIQ", 0x1FFC: "NMI", 0x1FFE: "RESET"}
 SITE = 0xE008

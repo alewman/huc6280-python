@@ -16,8 +16,9 @@ python -I scripts/mame_replay.py tests/mednafen_traces/GAME [--no-adopt-block]
 ```
 
 - `scripts/build_mednafen.py` downloads the pinned `mednafen-1.32.1.tar.xz` into `reference/build/`
-  (gitignored), applies **`tools/mednafen-trace.patch`** (the only thing committed: about 30 changed
-  lines, GPL-2.0-or-later like what it patches) and builds a PC Engine-only binary
+  (gitignored), applies **`mednafen-trace.patch`** (about 30 changed lines; committed here until
+  2026-11-21, now a GPL-2.0-only tool outside this repository, at
+  `$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch`: set `EMU_TOOLS_GPL2`) and builds a PC Engine-only binary
   (`--enable-pce`, every other system and the debugger off). SDL2's development files are installed
   here; **`libflac` development files are not, so it needs `--without-libflac`** (the configure
   script otherwise stops with "libflac >= 1.3.0 not found"); ALSA/JACK are off. No sudo.

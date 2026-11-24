@@ -14,7 +14,8 @@ step is skipped when its output already exists.
   bits), the T flag, block transfers, and three interrupt inputs; ``psg.vhd``
   and the top-level wrapper ``HUC6280.vhd`` are not analysed (the PSG is the
   board's). Hand-written HDL, not die-traced: emulator tier. This step only proves it analyses.
-- ``huc6280-tb``: analyse the same units with tests/huc6280_vhdl/tb_huc6280.vhd (GHDL's LLVM
+- ``huc6280-tb``: analyse the same units with tb_huc6280.vhd (outside this repository, at
+  $EMU_TOOLS_GPL/tools/huc6280-python/huc6280_vhdl/; set EMU_TOOLS_GPL) (GHDL's LLVM
   back end, -O2) and elaborate the rung 5 testbench executable into reference/build/huc6280-tb.
 
     python -I scripts/build_referees.py                  # all steps
@@ -32,6 +33,9 @@ import tarfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+import emu_tools
+
 BUILD = ROOT / "reference" / "build"
 SRC = ROOT / "reference" / "src"
 RTL = SRC / "TurboGrafx16_MiSTer" / "rtl" / "HUC6280"
@@ -70,14 +74,10 @@ def step_vhdl(given: Path | None) -> None:
 
 def step_vhdl_tb(given: Path | None) -> None:
     work = BUILD / "huc6280-tb"
-    # The testbench elaborates with srg320's GPL core: a GPL tool outside this repository.
-    bench = (
-        Path(os.environ.get("HUC6280_GPL_TOOLS", ROOT / "tools"))
-        / "huc6280_vhdl"
-        / "tb_huc6280.vhd"
-    )
-    if not bench.exists():
-        sys.exit(f"{bench} not found: set HUC6280_GPL_TOOLS (docs/provenance.md)")
+    # The testbench is elaborated with srg320's VHDL (unlicensed: run only, fetched at the pin and
+    # never committed), so it is kept with the family's GPL tools, outside this repository, at
+    # $EMU_TOOLS_GPL/tools/huc6280-python/huc6280_vhdl/tb_huc6280.vhd; exit status 3 without it.
+    bench = emu_tools.require(emu_tools.TB_HUC6280)
     executable = work / "tb_huc6280"
     if executable.exists() and executable.stat().st_mtime > bench.stat().st_mtime:
         return

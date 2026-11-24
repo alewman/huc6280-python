@@ -16,7 +16,9 @@ stated).
 Phase 0 (2026-10-23) pinned and read the source of MAME 0.285's `h6280`
 (BSD-3-Clause), ares (ISC), Mesen2 (GPL-3.0), Mednafen 1.32.1 and the two
 libretro beetle-pce trees (GPL-2.0), Geargrafx (GPL-3.0) and srg320's VHDL in
-TurboGrafx16_MiSTer (GPL-2.0+); `scripts/pinned_repos.json` records each with
+TurboGrafx16_MiSTer (recorded then as GPL-2.0+; unlicensed since Aubrey's verdict of 2026-11-24:
+no LICENSE file at the pin and no notice on the HUC6280 files, so run only, fetched at the pin
+and never committed); `scripts/pinned_repos.json` records each with
 its licence, and the README says "the GPL and LGPL emulators named in these
 documents are read, cited and run as referees". The family charter (rule 3)
 now says their source is not opened while writing the code it would inform.
@@ -33,9 +35,9 @@ tool's report. Results:
 | Reference | Licence | Hits |
 | --- | --- | --- |
 | Mesen2 `Core/PCE` | GPL-3.0 | opcode mnemonic rows (facts); **quoted source comments** in `docs/issues/0002`, `tests/test_directed.py`, `docs/timing.md` |
-| beetle-pce | GPL-2.0 | `tools/mednafen-trace.patch` context (expected; GPL tool); a **quoted comment** in `docs/timing.md` |
+| beetle-pce | GPL-2.0 | `tools/mednafen-trace.patch` (now outside, in emu-tools-gpl2) context (expected; GPL tool); a **quoted comment** in `docs/timing.md` |
 | beetle-pce-fast, Geargrafx | GPL-2.0, GPL-3.0 | none |
-| TurboGrafx16_MiSTer | GPL-2.0+ | one mnemonic row (fact) |
+| TurboGrafx16_MiSTer | GPL-2.0+ as recorded then; unlicensed, run only, since 2026-11-24 | one mnemonic row (fact) |
 | ares `huc6280` | ISC | mnemonic rows and opcode-number runs (facts) |
 | MAME `h6280` | BSD-3-Clause | one register-name row (fact) |
 
@@ -71,9 +73,9 @@ tool's report. Results:
 | SingleStepTests huc6280 and 65x02 Rockwell sets | fetched, pinned, never committed; MIT | clean |
 | Klaus Dormann's 65C02 extended opcodes test | fetched; `scripts/dormann_to_ca65.py` converts it at build time; GPL-3.0; never committed | clean |
 | MAME 0.285 replays (`scripts/mame_*`, `tests/mame_replay.py`) | MAME run as a closed box with a Lua tap | clean |
-| `tools/mednafen-trace.patch` | a patch to Mednafen, labelled GPL-2.0-or-later, outside the package | clean as a GPL tool file (charter rule 6); **moved out 2026-11-21** with the history reset, kept outside the repository with the other GPL tools below (`HUC6280_GPL_TOOLS` names their directory) |
+| `tools/mednafen-trace.patch` | a patch to Mednafen, labelled GPL-2.0-or-later, outside the package | clean as a GPL tool file (charter rule 6); **moved out 2026-11-21** with the history reset, kept outside the repository; since 2026-11-24 it is GPL-2.0-only by Aubrey's rule of that day and lives at `$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch`, where `scripts/build_mednafen.py` finds it |
 | `tests/test_mednafen.py` | SHA-256 digests of the four result tables (facts) | clean |
-| `tests/huc6280_vhdl/tb_huc6280.vhd` | our testbench for srg320's VHDL; its header described the core's insides | **unclear** -> **clean** (2026-11-19): the header now states the port timing as OBSERVED in simulation (`tb_vanish.vhd` with `late`: data driven 1 ns after the rising edge is misread); both testbenches use only the entity's ports and carry `SPDX-License-Identifier: MIT`. **Moved out 2026-11-21** with `tb_vanish.vhd` and `validation/vanish_probe.py`: a testbench elaborated with a GPL core, and a ctypes driver of Mesen2's C API, are GPL tools as built (the family's rule for harnesses); `scripts/build_referees.py` and `validation/vanish_vhdl.py` find them through `HUC6280_GPL_TOOLS` |
+| `tests/huc6280_vhdl/tb_huc6280.vhd` | our testbench for srg320's VHDL; its header described the core's insides | **unclear** -> **clean** (2026-11-19): the header now states the port timing as OBSERVED in simulation (`tb_vanish.vhd` with `late`: data driven 1 ns after the rising edge is misread); both testbenches use only the entity's ports and carry `SPDX-License-Identifier: MIT`. **Moved out 2026-11-21** with `tb_vanish.vhd` and `validation/vanish_probe.py`: a testbench elaborated with a GPL core, and a ctypes driver of Mesen2's C API, are GPL tools as built (the family's rule for harnesses); `scripts/build_referees.py` and `validation/vanish_vhdl.py` find the testbenches at `$EMU_TOOLS_GPL/tools/huc6280-python/huc6280_vhdl/`, and the probe is run by hand from `$EMU_TOOLS_GPL/tools/huc6280-python/vanish_probe.py` (now a shim over mesen2-runner; it finds this checkout through `HUC6280_PYTHON_ROOT`, else the working directory) |
 | `tests/test_directed.py` lines 753, 765, 771, 877 | quoted Mesen2 comments and Mednafen's code expression | **rewrite** -> **clean** (2026-11-19): comments rewritten as observed behaviour with the closed-box runs named; the two withdrawn modes' tests replaced by refusal tests |
 | Chris Covell's CPU test ROM | fetched, no licence stated, never committed | clean (closed box) |
 | Hudson manuals, pcetech, sgxtech, pce_cpu (shu) | fetched into `reference/docs`, never committed | facts only |

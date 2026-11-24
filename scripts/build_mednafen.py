@@ -5,8 +5,9 @@
 
 Everything lands under reference/build/ (gitignored): the tarball (SHA-256 from
 scripts/pinned_files.json), the unpacked tree, the binary. The patch is
-``mednafen-trace.patch``, a GPL tool kept outside this repository since 2026-11-21: set
-``HUC6280_GPL_TOOLS`` to the directory holding it. The source tree and binary are never committed. Needs a C++
+``mednafen-trace.patch``, a GPL-2.0-only tool kept outside this repository since 2026-11-21, at
+``$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch`` (set ``EMU_TOOLS_GPL2`` to a
+checkout of emu-tools-gpl2; exit status 3 without it). The source tree and binary are never committed. Needs a C++
 compiler, make and SDL2's development files (found on this machine); no sudo.
 """
 
@@ -22,11 +23,14 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+import emu_tools
+
 BUILD = ROOT / "reference" / "build"
 TARBALL = BUILD / "mednafen-1.32.1.tar.xz"
 TREE = BUILD / "mednafen-src"
 #: A patch of Mednafen's (GPL) source is a GPL tool, outside this repository (docs/provenance.md).
-PATCH = Path(os.environ.get("HUC6280_GPL_TOOLS", ROOT / "tools")) / "mednafen-trace.patch"
+PATCH = emu_tools.require(emu_tools.MEDNAFEN_PATCH)
 BINARY = BUILD / "mednafen-bin" / "bin" / "mednafen"
 
 
