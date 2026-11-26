@@ -151,8 +151,23 @@ Beetle PCE (https://github.com/libretro/beetle-pce-libretro @
 because `scripts/build_referees.py` analyses its HuC6280 VHDL with GHDL for rung 5; and the
 Mednafen 1.32.1 tarball with its unpacked tree under `reference/build/` (GPL-2.0), because
 `scripts/build_mednafen.py` builds the traced detector from it with the emu-tools-gpl2 patch.
-Neither has a shipped build that would do. Whether those builds move to emu-tools-gpl /
-emu-tools-gpl2 is open.
+Neither has a shipped build that would do. Aubrey's answer (decisions page T3, 2026-11-25): both
+move, one tool at a time. Mednafen moved on 2026-11-25 (below); the VHDL is still here.
+
+### Mednafen's build moved to emu-tools-gpl2 (2026-11-25)
+
+Decisions page T3: the traced Mednafen is now built by emu-tools-gpl2's `tools/mednafen`
+(mednafen-build 0.1.0, GPL-2.0-only: `build.py --machine pce`, the same pinned tarball,
+SHA-256 `de7eb94a...`, the same patch and configure options), and run from
+`$EMU_TOOLS_GPL2/tools/mednafen/build/pce/bin/mednafen` (scripts/mednafen_trace.py, through
+scripts/emu_tools.py; exit status 3 without it). `scripts/build_mednafen.py` now only runs that
+tool's build as a program. The tarball's pin left `scripts/pinned_files.json`. Moved unopened to
+a backup outside the repository (not deleted): `reference/build/mednafen-1.32.1.tar.xz`,
+`reference/build/mednafen-src` (the unpacked, patched tree) and `reference/build/mednafen-bin`
+(the program, sha1 `e70ac33f`). Identity check, 2026-11-25: `scripts/mednafen_trace.py` on
+scripts/decimal_tables.py's own 8 KiB card (no commercial ROM), `--count 300000`, with the old
+program and with the tool's: both traces 600,000 lines, 13,367,056 bytes, sha1 `fb30b743`, byte
+for byte the same (OBSERVED; pcengine-python's `mednafen_record.py` gave the same file both ways).
 
 **For review (a finding, not fixed here):** `scripts/compare_cycles.py`, `scripts/opcode_map.py`
 and `scripts/manual_table.py` parse tables (cycle counts, opcode sizes, the opcode and

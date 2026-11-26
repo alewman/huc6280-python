@@ -10,15 +10,17 @@ The replays were run on 2026-10-24, the directed cards on 2026-11-19.
 ## The recipe
 
 ```text
-python -I scripts/build_mednafen.py                     # fetch (SHA-256 checked), patch, configure, build: ~2 minutes
+python -I scripts/build_mednafen.py                     # runs emu-tools-gpl2's build (fetch, SHA-256 check, patch, configure, build)
 python -I scripts/mednafen_trace.py GAME.7z --count 3400000
 python -I scripts/mame_replay.py tests/mednafen_traces/GAME [--no-adopt-block]
 ```
 
-- `scripts/build_mednafen.py` downloads the pinned `mednafen-1.32.1.tar.xz` into `reference/build/`
-  (gitignored), applies **`mednafen-trace.patch`** (about 30 changed lines; committed here until
-  2026-11-21, now a GPL-2.0-only tool outside this repository, at
-  `$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch`: set `EMU_TOOLS_GPL2`) and builds a PC Engine-only binary
+- Since 2026-11-25 the build lives outside this repository, in emu-tools-gpl2's `tools/mednafen`
+  (set `EMU_TOOLS_GPL2`): `scripts/build_mednafen.py` runs its `build.py --machine pce`, which
+  downloads the pinned `mednafen-1.32.1.tar.xz` into that tool's git-ignored `upstream/`, applies
+  **`mednafen-trace.patch`** (about 30 changed lines; committed here until 2026-11-21, a
+  GPL-2.0-only file at `$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch`) and builds a
+  PC Engine-only binary at `$EMU_TOOLS_GPL2/tools/mednafen/build/pce/bin/mednafen`
   (`--enable-pce`, every other system and the debugger off). SDL2's development files are installed
   here; **`libflac` development files are not, so it needs `--without-libflac`** (the configure
   script otherwise stops with "libflac >= 1.3.0 not found"); ALSA/JACK are off. No sudo.

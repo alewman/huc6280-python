@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 """C13: record the two decimal ADC/SBC result tables closed box and check the core against them.
 
-    python -I scripts/build_mednafen.py          # once
+    python -I scripts/build_mednafen.py          # once (emu-tools-gpl2's build)
     python -I scripts/decimal_tables.py [--out DIR]
 
 Mednafen's table: an 8 KB HuCard written here runs ``ADC $00`` and ``SBC $00`` with D set, with

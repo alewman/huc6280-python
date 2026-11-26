@@ -179,11 +179,12 @@ detects, the highest tier that covers a claim decides it.
   accurate. Both are opinions checked against hardware by eye, not by data.
   Mesen generated the corpus. Every cross-emulator
   comparison in timing.md and undocumented-behavior.md is among these.
-- Mednafen proper (the program, not the libretro port) is pinned as
-  `mednafen-1.32.1.tar.xz` (tool, 3.5 MB, SHA-256 `de7eb94a...`). It has no
-  headless instruction trace; **`mednafen-trace.patch` adds one** (a GPL-2.0-only tool outside
-  this repository, at `$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch`) and
-  `scripts/build_mednafen.py` builds it (rung 4b below; recipe and traps in
+- Mednafen proper (the program, not the libretro port) is `mednafen-1.32.1.tar.xz` (3.5 MB,
+  SHA-256 `de7eb94a...`), pinned and built since 2026-11-25 by emu-tools-gpl2's `tools/mednafen`
+  (pinned here before). It has no headless instruction trace; **`mednafen-trace.patch` adds
+  one** (a GPL-2.0-only tool outside this repository, at
+  `$EMU_TOOLS_GPL2/tools/mednafen/patches/mednafen-trace.patch`) and
+  `scripts/build_mednafen.py` runs that tool's build (rung 4b below; recipe and traps in
   [mednafen-oracle.md](mednafen-oracle.md)).
 
 ### srg320's `HUC6280` VHDL (MiSTer TurboGrafx16): emulator-derived, a per-cycle third opinion

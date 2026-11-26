@@ -14,8 +14,10 @@ import os
 import sys
 from pathlib import Path
 
-#: The instruction-trace patch for Mednafen 1.32.1 (GPL-2.0-only, so in emu-tools-gpl2).
-MEDNAFEN_PATCH = ("EMU_TOOLS_GPL2", "tools/mednafen/patches/mednafen-trace.patch")
+#: Mednafen 1.32.1 with the instruction-trace patch (GPL-2.0-only, so in emu-tools-gpl2): its
+#: build script and the program it builds (since 2026-11-25; the patch alone until then).
+MEDNAFEN_BUILD = ("EMU_TOOLS_GPL2", "tools/mednafen/build.py")
+MEDNAFEN_PCE = ("EMU_TOOLS_GPL2", "tools/mednafen/build/pce/bin/mednafen")
 #: The testbenches for srg320's HUC6280 VHDL (not regrouped yet).
 TB_HUC6280 = ("EMU_TOOLS_GPL", "tools/huc6280-python/huc6280_vhdl/tb_huc6280.vhd")
 TB_VANISH = ("EMU_TOOLS_GPL", "tools/huc6280-python/huc6280_vhdl/tb_vanish.vhd")
